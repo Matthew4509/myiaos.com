@@ -90,6 +90,8 @@ writeFileSync(join(priv, 'config.example.php'), example
   .replace('The default is ../desktop-data, beside the repository (not inside it).', 'The default is myiaos/data, beside public_html (not inside it).')
   .replace(dataLine, "'data_dir' => getenv('DESKTOP_DATA_DIR') ?: __DIR__ . '/data',"));
 mkdirSync(join(priv, 'data'), { recursive: true });
+// The version System update compares against (server/lib/updater.php).
+writeFileSync(join(priv, 'VERSION'), `${version}\n`);
 writeFileSync(join(priv, '.htaccess'), '# Belt and braces: this folder is outside the web root, but if a host ever serves it, refuse.\nRequire all denied\n');
 writeFileSync(join(priv, 'data', '.htaccess'), 'Require all denied\n');
 
