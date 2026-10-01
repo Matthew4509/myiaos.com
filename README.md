@@ -7,6 +7,9 @@ windows, a file explorer, notes, documents, mail, a calendar, chat between the a
 that can run entirely on your own device. Your files live on your server, not someone else's cloud. To upload files, drag onto the
 desktop, and its uploaded and saved to the cloud.
 
+**No git needed:** download the release zip, upload it to your web hosting and follow four short steps. See
+[Install](#install-download-the-zip-upload-done).
+
 ## What's in it
 
 - **Files and documents:** Explorer, Notepad and Notepad Pro, an editor with syntax highlighting, a spreadsheet,
@@ -50,19 +53,49 @@ desktop, and its uploaded and saved to the cloud.
 No software is perfectly secure. Keep your host's PHP up to date, use HTTPS, and keep backups. IF using cpanel, you can
 use their inbuilt tool to password protect that root folder for additional security. 
 
-## Install on cPanel (or any host with a home folder beside public_html)
+## Install: download the zip, upload, done
 
-Needs **PHP 8.2 or newer** with Argon2 password hashing. Mail, video titles and Claude also need the `openssl`
-extension; Claude and saving AI models to the server need `curl`.
+**You do not need git, Node.js or a command line.** The release zip is the complete, ready-to-run desktop: nothing
+to build, no database to create.
 
-1. Download the release zip (or build it yourself, below).
-2. In cPanel File Manager, open your **home** folder (the one that contains `public_html`), upload the zip there and
+**[Download the latest release zip](https://github.com/Matthew4509/myiaos.com/releases/latest)** (the file named
+`myiaos-<version>.zip`). Do not use the green **Code > Download ZIP** button: that is the source code, which has to
+be built first (see Build from source, below).
+
+### What your hosting needs
+
+Ordinary shared web hosting ("LAMP" hosting) is enough:
+
+- **Apache or LiteSpeed** web server (MyiaOS's security settings are in `.htaccess` files, which these read). Hosts
+  that run nginx only will not apply them.
+- **PHP 8.2 or newer** with Argon2 password hashing. Mail, video titles, the Reader's library and Claude also need
+  the `openssl` extension; Claude and saving AI models to the server need `curl`.
+- **HTTPS** on your domain (most hosts give a free certificate).
+- A folder **above** your web root that you can upload to, so your files and accounts live outside the part of
+  the server the web can reach.
+- No MySQL or other database: MyiaOS keeps everything in files.
+
+Hosting control panels this suits: **cPanel** (the one we test on), **DirectAdmin** and **Plesk**, which between them
+run most budget shared hosting. A VPS with Apache and PHP works too. Panels built on nginx only (CloudPanel, for
+example) do not read `.htaccess`, so they are not suitable.
+
+### Steps (cPanel)
+
+1. In cPanel File Manager, open your **home** folder (the one that contains `public_html`), upload the zip there and
    Extract. It adds files to `public_html/` and a new `myiaos/` folder beside it.
-3. In cPanel > Terminal run `php myiaos/tools/server-check.php`. It names anything missing.
-4. Copy `myiaos/config.example.php` to `myiaos/config.php` and set `'allow_remote' => true`. Only do this with HTTPS
-   working on your domain.
-5. Visit your site. The first visit sets up the **owner** account and asks for a set-up code: open
+2. Optional: in cPanel > Terminal run `php myiaos/tools/server-check.php`. It names anything missing.
+3. Copy `myiaos/config.example.php` to `myiaos/config.php`, open it, and set `'allow_remote' => true`. Only do this
+   with HTTPS working on your domain.
+4. Visit your site. The first visit sets up the **owner** account and asks for a set-up code: open
    `myiaos/data/accounts/SETUP-CODE.txt` in File Manager. The file is deleted once you are set up.
+
+That's it. To update later, extract the new zip the same way: your files, accounts and `config.php` are never in the
+zip, so they are kept.
+
+**Other panels:** the zip expects your web root to be called `public_html` with a folder above it. On
+**DirectAdmin**, extract it in `domains/<your domain>/`. Where the web root has another name (Plesk's `httpdocs`,
+for example), extract the zip in the folder above it, move everything from the new `public_html/` into your web
+root, and leave `myiaos/` where it is, beside the web root. Then follow steps 2 to 4.
 
 `INSTALL.txt` in the zip has the full notes (updating, AI models, a forgotten owner password). Do not put the site
 behind a proxy or "Flexible SSL" CDN: the server must see each visitor's real address and a real HTTPS connection.
