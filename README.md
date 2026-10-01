@@ -19,7 +19,7 @@ desktop, and its uploaded and saved to the cloud.
 - **Chat:** encrypted end to end between the accounts on your own server, with safety codes to check keys. You can
   delete your own messages (for everyone); the owner can clear General and choose, in Settings, whether messages vanish
   after 3, 7 or 30 days. Each person can also have their AI chats cleared after 3, 7 or 30 days.
-- **AI:** Gemma 2 2B (the default, with a friendly character of its own), Qwen 3.5 0.8B or Qwen 3.5 4B run in the browser
+- **AI:** Gemma 2 2B (the default), Qwen 3.5 0.8B or Qwen 3.5 4B run in the browser
   on your own graphics chip (WebGPU): nothing you type leaves your device. Chat › Agents also does Summarise, Rewrite and
   Ask about a file. Optionally, each person can add their own Claude or OpenRouter key (Settings › AI), each with a
   monthly spending cap. The built-in models are pinned to fixed versions and checked (SHA-256) before use; the model's
