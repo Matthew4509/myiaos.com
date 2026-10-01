@@ -24,7 +24,7 @@ export interface ChatTurn {
 
 /**
  * The built-in models, smallest first: Qwen 3.5 0.8B (about 430 MB, 1.9 GB of graphics memory), Gemma 2 2B (about
- * 1.4 GB, 2.5 GB of graphics memory; replaced Qwen 3.5 2B on 30 Sep 2026: a warmer talker) and
+ * 1.4 GB, 2.5 GB of graphics memory; replaced Qwen 3.5 2B on 30 Sep 2026) and
  * Qwen 3.5 4B (about 2.2 GB, 4.7 GB of graphics memory). All are q4f32 builds, the kind an older graphics chip (no
  * half-precision) can run. Only these are offered by the server, even if other files were fetched onto it; a person can
  * add others from Hugging Face for themselves (assistant/hfsearch.ts).

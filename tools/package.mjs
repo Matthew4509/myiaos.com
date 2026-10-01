@@ -118,7 +118,7 @@ myiaos/data/accounts/throttle.json in File Manager). Addresses listed in trusted
 Mail, YouTube video titles, the Reader's library and your own Claude or OpenRouter key need the PHP extension "openssl";
 Claude and saving AI models also need "curl" (server-check.php says).
 The built-in AI models are NOT in this zip: Qwen 3.5 0.8B (about 430 MB), Gemma 2 2B by Google (about
-1.4 GB; a warmer talker) and Qwen 3.5 4B (about 2.2 GB; the best answers, slowest). Without them it still works: each browser fetches the model from Hugging Face when it
+1.4 GB) and Qwen 3.5 4B (about 2.2 GB). Without them it still works: each browser fetches the model from Hugging Face when it
 starts. To keep one on your own server (so browsers get it from here, and nothing is fetched from Hugging Face by
 them): sign in as the owner, open Settings > AI, choose the model and press "Save to this MyiaOS"; the server fetches it
 from Hugging Face in 16 MB pieces into myiaos/models/. That folder is outside public_html: only people signed in
