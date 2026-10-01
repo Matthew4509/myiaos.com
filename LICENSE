@@ -1,0 +1,40 @@
+MyiaOS Licence 1.0
+Free to use, free to change, not for sale.
+
+Copyright (c) 2026 myiaos.com. All rights not granted below are reserved.
+
+"The software" means MyiaOS: the source code and files in this repository and in any release made from it, except
+the third-party parts listed under "Other people's work" below.
+
+1. Use it. You may install, run and use the software free of charge: for yourself, your family, or inside your own
+   organisation, on your own computer, server or hosting account.
+
+2. Change it. You may modify the software and make your own versions of it for those same uses.
+
+3. Share it. You may give copies of the software, changed or unchanged, to other people free of charge, as long as
+   every copy carries this licence and the copyright notice above, and a changed copy says that it was changed.
+
+4. Do not sell it. Without the copyright holder's written permission you may not:
+   a. sell, resell, rent, lease or sublicense the software or any version of it, changed or unchanged;
+   b. charge anyone for a copy of it, or for access to it, including running it as a paid hosted service for other
+      people; or
+   c. include it in a product or service that is sold.
+   Charging for your own time to install or maintain a copy for someone, who then owns and runs that copy under this
+   licence, is allowed.
+
+5. Ownership and name. The copyright holder keeps all copyright in the software. This licence gives no right to use
+   the name "MyiaOS" or its logo for a changed version in a way that suggests it is the original or is endorsed by
+   the copyright holder.
+
+6. Other people's work. Parts of the software were written by others and keep their own licences, which travel with
+   them: the libraries in public/vendor (built from vendor-src/; their licence texts are beside them and listed on
+   About > Credits), the PHP libraries in server/vendor, and any AI model files you download. Nothing in this licence
+   limits what those licences allow for those parts.
+
+7. Ending. If you break these terms, your rights under this licence end. If you stop within 30 days of being told,
+   they come back.
+
+8. No warranty. The software is provided "as is", without warranty of any kind, express or implied, including
+   fitness for a particular purpose. You are responsible for your own server, your own data and your own backups.
+   In no event shall the copyright holder be liable for any claim, damages or other liability arising from the
+   software or its use.
