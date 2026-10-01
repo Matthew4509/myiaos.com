@@ -67,11 +67,26 @@ const ICONS = {
   network: '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8" fill="none" stroke="#fff"/><rect x="6" y="12" width="4" height="2" fill="#fff"/></svg>',
   note: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h12v9H6l-4 3z" fill="none" stroke="#fff"/></svg>',
 };
-const icon = (name, cls = 'b-icon') => {
-  const span = h('span', { class: cls });
-  span.innerHTML = ICONS[name];
-  return span;
-};
+/**
+ * One of this file's own SVG drawings as elements. Not innerHTML: inside MyiaOS the page's security policy (Trusted
+ * Types) refuses HTML made from a string. Reads only what these drawings use: tags, attributes in double quotes, text.
+ */
+function drawing(markup) {
+  const out = document.createDocumentFragment();
+  const open = [out];
+  for (const m of markup.matchAll(/<(\/?)([a-zA-Z]+)((?:\s+[\w:-]+="[^"]*")*)\s*(\/?)>|([^<]+)/g)) {
+    if (m[5] !== undefined) open[open.length - 1].append(m[5]);
+    else if (m[1]) open.pop();
+    else {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', m[2]);
+      for (const [, name, value] of m[3].matchAll(/([\w:-]+)="([^"]*)"/g)) el.setAttribute(name, value);
+      open[open.length - 1].append(el);
+      if (!m[4]) open.push(el);
+    }
+  }
+  return out;
+}
+const icon = (name, cls = 'b-icon') => h('span', { class: cls }, drawing(ICONS[name]));
 
 let S;
 let LIB;
@@ -330,7 +345,8 @@ function openReading() {
     readerSlot.replaceChildren(para(`Loading ${choice.title}...`));
     let book;
     try {
-      book = makeBook(await loadLines(choice.file), choice.start, choice.end, choice.heads);
+      // The texts belong to the Reader (its library.json names them), so they are read from beside it.
+      book = makeBook(await loadLines(new URL(`../reader/${choice.file}`, location.href).pathname), choice.start, choice.end, choice.heads);
     } catch (e) {
       readerSlot.replaceChildren(para(`${choice.title} could not be loaded: ${e.message}.`));
       return;
@@ -705,9 +721,9 @@ function openCanon() {
   const ok = button(c.ok, null, true);
   const cancel = button(c.cancel, () => finish());
   const art1 = h('span', { class: 'b-canon-art' });
-  art1.innerHTML = '<svg viewBox="0 0 90 60" aria-hidden="true"><rect x="10" y="26" width="70" height="26" rx="3" fill="#e5e7eb" stroke="#6b7280"/><rect x="22" y="10" width="46" height="22" fill="#fff" stroke="#9ca3af"/><path d="M45 4v14m-6-6 6 6 6-6" stroke="#2563eb" stroke-width="3" fill="none"/></svg>';
+  art1.append(drawing('<svg viewBox="0 0 90 60" aria-hidden="true"><rect x="10" y="26" width="70" height="26" rx="3" fill="#e5e7eb" stroke="#6b7280"/><rect x="22" y="10" width="46" height="22" fill="#fff" stroke="#9ca3af"/><path d="M45 4v14m-6-6 6 6 6-6" stroke="#2563eb" stroke-width="3" fill="none"/></svg>'));
   const art2 = h('span', { class: 'b-canon-art' });
-  art2.innerHTML = '<svg viewBox="0 0 90 60" aria-hidden="true"><rect x="8" y="12" width="74" height="40" rx="4" fill="#e5e7eb" stroke="#6b7280"/><rect x="16" y="20" width="30" height="16" fill="#1f2937"/><circle cx="64" cy="30" r="8" fill="#fff" stroke="#374151"/><text x="64" y="33" font-size="8" text-anchor="middle" fill="#111">OK</text><path d="M72 48l-6-10" stroke="#2563eb" stroke-width="3"/></svg>';
+  art2.append(drawing('<svg viewBox="0 0 90 60" aria-hidden="true"><rect x="8" y="12" width="74" height="40" rx="4" fill="#e5e7eb" stroke="#6b7280"/><rect x="16" y="20" width="30" height="16" fill="#1f2937"/><circle cx="64" cy="30" r="8" fill="#fff" stroke="#374151"/><text x="64" y="33" font-size="8" text-anchor="middle" fill="#111">OK</text><path d="M72 48l-6-10" stroke="#2563eb" stroke-width="3"/></svg>'));
   const dialog = h('div', { class: 'b-canon' },
     h('p', { class: 'b-canon-head' }, icon('alert', 'b-alert-icon'), h('strong', { text: c.headline })),
     h('p', { class: 'b-canon-small', text: c.media }), h('p', { class: 'b-canon-small', text: c.size }),
@@ -720,7 +736,7 @@ function openCanon() {
   // document being printed. The left keeps the printer itself, its little screen blinking NO PAPER over an empty tray.
   tabs.statusPane.append(dialog);
   const machine = h('div', { class: 'b-canon-machine', role: 'img', 'aria-label': 'The Canon: its screen says NO PAPER and the tray is empty' });
-  machine.innerHTML = '<svg viewBox="0 0 320 190" aria-hidden="true"><rect x="0" y="0" width="320" height="190" fill="#d9d9d9"/><rect x="50" y="30" width="220" height="30" rx="4" fill="#bfc3c8"/><rect x="40" y="56" width="240" height="84" rx="10" fill="#2f3237"/><rect x="58" y="72" width="104" height="36" rx="3" fill="#9fb8a0"/><text x="110" y="95" font-family="Courier New, monospace" font-size="15" font-weight="700" text-anchor="middle" fill="#1d2b1d" class="b-canon-lcd">NO PAPER</text><circle class="b-canon-led" cx="200" cy="90" r="7" fill="#ff8a00"/><circle cx="232" cy="90" r="9" fill="#50545a" stroke="#6b7078"/><text x="232" y="94" font-family="Segoe UI, sans-serif" font-size="8" text-anchor="middle" fill="#e5e5e5">OK</text><rect x="70" y="140" width="180" height="10" rx="2" fill="#44484e"/><rect x="80" y="150" width="160" height="22" rx="3" fill="#e9eaec" stroke="#b5b8bd"/><text x="160" y="165" font-family="Segoe UI, sans-serif" font-size="9" text-anchor="middle" fill="#8a8d92">front tray: empty</text></svg>';
+  machine.append(drawing('<svg viewBox="0 0 320 190" aria-hidden="true"><rect x="0" y="0" width="320" height="190" fill="#d9d9d9"/><rect x="50" y="30" width="220" height="30" rx="4" fill="#bfc3c8"/><rect x="40" y="56" width="240" height="84" rx="10" fill="#2f3237"/><rect x="58" y="72" width="104" height="36" rx="3" fill="#9fb8a0"/><text x="110" y="95" font-family="Courier New, monospace" font-size="15" font-weight="700" text-anchor="middle" fill="#1d2b1d" class="b-canon-lcd">NO PAPER</text><circle class="b-canon-led" cx="200" cy="90" r="7" fill="#ff8a00"/><circle cx="232" cy="90" r="9" fill="#50545a" stroke="#6b7078"/><text x="232" y="94" font-family="Segoe UI, sans-serif" font-size="8" text-anchor="middle" fill="#e5e5e5">OK</text><rect x="70" y="140" width="180" height="10" rx="2" fill="#44484e"/><rect x="80" y="150" width="160" height="22" rx="3" fill="#e9eaec" stroke="#b5b8bd"/><text x="160" y="165" font-family="Segoe UI, sans-serif" font-size="9" text-anchor="middle" fill="#8a8d92">front tray: empty</text></svg>'));
   w.stage.append(machine);
   let tries = 0;
   quiet(sleep(1200, signal).then(() => {

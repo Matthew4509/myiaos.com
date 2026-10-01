@@ -1,7 +1,7 @@
 // The desktop itself: puts the parts together (files, session, Recycle Bin, windows, menus, dialogs, taskbar,
 // Start menu, desktop icons, wallpaper) and runs apps. Nothing here ever erases files by itself.
 import { APPS, LOADERS, type AppId } from '../apps/catalog.ts';
-import { HIDDEN_APPS } from '../release.ts';
+import { HIDDEN_APPS, OPTIONAL_APPS } from '../release.ts';
 import { startPrinterMessages } from '../apps/printer/entry.ts';
 import { pictureTooBig } from '../core/imagesize.ts';
 import { LockScreen } from '../auth/lock.ts';
@@ -15,6 +15,7 @@ import { createFolderView } from './foldview.ts';
 import { fileTypeOf } from './filetypes.ts';
 import { isAppShortcut, openShortcut } from './appshortcut.ts';
 import { iconDefs } from './icons.ts';
+import { readInstalled, writeInstalled } from './installed.ts';
 import { bindDesktopKeys } from './keys.ts';
 import { NoticeCentre } from './notices.ts';
 import { startReminders } from './reminders.ts';
@@ -38,6 +39,27 @@ const PICTURE_MIME: Record<string, string> = {
   bmp: 'image/bmp',
 };
 const MAX_WALLPAPER_BYTES = 25 * 1024 * 1024;
+
+/** A catalog app as the shell runs it: its code loads the first time it opens (the window shows at once, then fills). */
+function catalogApp(id: AppId): AppDef {
+  const meta = APPS[id];
+  return {
+    ...meta,
+    launch: async (handle, arg) => {
+      const waiting = h('p', { class: 'app-message' }, 'Opening...');
+      handle.root.append(waiting);
+      let real: AppDef;
+      try {
+        real = await LOADERS[id]();
+      } catch {
+        waiting.textContent = `${meta.title} could not be loaded. Check the connection to the server, then open it again.`;
+        return;
+      }
+      waiting.remove();
+      if (!handle.signal.aborted) await real.launch(handle, arg);
+    },
+  };
+}
 
 class DesktopShell implements Shell {
   readonly fs: FileSystem;
@@ -102,6 +124,24 @@ class DesktopShell implements Shell {
 
   hasApp(id: string): boolean {
     return this.registry.has(id);
+  }
+
+  installedApps = new Set<string>();
+
+  async setInstalled(id: string, on: boolean): Promise<void> {
+    if (!OPTIONAL_APPS.includes(id) || HIDDEN_APPS.includes(id) || this.installedApps.has(id) === on) return;
+    const next = new Set(this.installedApps);
+    if (on) next.add(id);
+    else next.delete(id);
+    // Saved first: if the person's files cannot be written, nothing changes on screen either.
+    await writeInstalled(this.fs, [...next]);
+    this.installedApps = next;
+    if (on) {
+      this.registerApp(catalogApp(id as AppId));
+      return;
+    }
+    for (const win of this.windows.list().filter(w => w.appId === id)) await this.windows.close(win);
+    this.registry.delete(id);
   }
 
   apps(): AppDef[] {
@@ -345,26 +385,14 @@ export async function startDesktop(root: HTMLElement, store: Store, account: Acc
     signedOut: message => void shell.account?.signOut(message),
   });
 
-  // Every app from the catalog; its code loads the first time it opens (the window shows at once, then fills).
+  // Every app from the catalog; its code loads the first time it opens (the window shows at once, then fills). An
+  // optional app only if this person has installed it (the Application manager adds and removes it later).
+  shell.installedApps = new Set(await readInstalled(shell.fs));
   for (const meta of Object.values(APPS)) {
     const id = meta.id as AppId;
     if (HIDDEN_APPS.includes(id)) continue; // not in this release (src/release.ts)
-    shell.registerApp({
-      ...meta,
-      launch: async (handle, arg) => {
-        const waiting = h('p', { class: 'app-message' }, 'Opening...');
-        handle.root.append(waiting);
-        let real: AppDef;
-        try {
-          real = await LOADERS[id]();
-        } catch {
-          waiting.textContent = `${meta.title} could not be loaded. Check the connection to the server, then open it again.`;
-          return;
-        }
-        waiting.remove();
-        if (!handle.signal.aborted) await real.launch(handle, arg);
-      },
-    });
+    if (OPTIONAL_APPS.includes(id) && !shell.installedApps.has(id)) continue;
+    shell.registerApp(catalogApp(id));
   }
 
   // Our own changes, and other tabs' changes, reach every open view.

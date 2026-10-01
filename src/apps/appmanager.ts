@@ -1,10 +1,11 @@
-// Application manager: the apps on this MyiaOS by kind (Games, Office, System) as a grid of icons, and Updates. New apps and new
+// Application manager: the apps on this MyiaOS by kind (Games, Office, System) as a grid of icons, and Updates. Optional
+// apps (src/release.ts OPTIONAL_APPS) carry Install / Remove: each person chooses them for their own desktop. New apps and new
 // versions of the built-in ones arrive as a System update, signed by MyiaOS and fetched from myiaos.com by this
 // MyiaOS's own server (server/lib/updater.php); only the owner installs one. Opened with "updates" it starts there.
 import { h, on } from '../core/dom.ts';
 import { formatSize } from '../core/format.ts';
 import { ServiceApi } from '../net/service.ts';
-import { HIDDEN_APPS } from '../release.ts';
+import { HIDDEN_APPS, OPTIONAL_APPS } from '../release.ts';
 import { icon, type IconName } from '../shell/icons.ts';
 import type { AppDef } from '../shell/types.ts';
 import { APPS } from './catalog.ts';
@@ -20,7 +21,7 @@ const KINDS: Array<{ id: Kind | 'updates'; label: string }> = [
 
 /** Which shelf each app sits on; an app not named here is Office. */
 const KIND_OF: Partial<Record<string, Kind>> = {
-  planetziods: 'games', printer: 'games',
+  planetziods: 'games', printer: 'games', officeprinter: 'games',
   explorer: 'system', terminal: 'system', taskmanager: 'system', settings: 'system', account: 'system',
   shortcuts: 'system', about: 'system', trash: 'system', riscv: 'system', aimodels: 'system', panel: 'system', appmanager: 'system',
 };
@@ -61,9 +62,27 @@ export const appManagerApp: AppDef = {
       on(more, 'click', () => { showing = 'updates'; paint(); }, signal);
       panel.replaceChildren(
         h('div', { class: 'ast-grid', role: 'list' }, ...apps.map(a => {
-          const b = h('button', { type: 'button', class: 'ast-app', role: 'listitem' }, icon(a.icon as IconName, 48), h('span', {}, a.title));
+          const optional = OPTIONAL_APPS.includes(a.id);
+          const installed = !optional || shell.installedApps.has(a.id);
+          const b = h('button', { type: 'button', class: 'ast-app', disabled: !installed }, icon(a.icon as IconName, 48), h('span', {}, a.title));
           on(b, 'click', () => void shell.openApp(a.id), signal);
-          return b;
+          if (!optional) return h('div', { class: 'ast-tile', role: 'listitem' }, b);
+          // An optional app: this person adds it to their own Start menu, or takes it off again.
+          const toggle = h('button', { type: 'button', class: `btn ast-install${installed ? '' : ' primary'}` }, installed ? 'Remove' : 'Install');
+          on(toggle, 'click', () => {
+            toggle.disabled = true;
+            shell.setInstalled(a.id, !installed).then(
+              () => {
+                shell.toast(installed ? `${a.title} is removed from your Start menu.` : `${a.title} is installed: open it here or from the Start menu.`);
+                paint();
+              },
+              error => {
+                toggle.disabled = false;
+                void shell.report(installed ? `${a.title} could not be removed` : `${a.title} could not be installed`, error);
+              },
+            );
+          }, signal);
+          return h('div', { class: 'ast-tile', role: 'listitem' }, b, toggle);
         })),
         ...(apps.length ? [] : [h('p', { class: 'hint' }, 'None on this shelf yet.')]),
         h('p', { class: 'hint' }, 'New apps come with MyiaOS updates. Search for more apps checks myiaos.com for one.'),

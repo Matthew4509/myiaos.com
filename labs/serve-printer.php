@@ -2,13 +2,14 @@
 // Local only: Office Printer A and B side by side on one port, to compare them.
 //   /      a page with the two links
 //   /a/    version A, the game as built (public/office-printer/, untouched)
-//   /b/    version B, the new flow (labs/office-printer-b/). Its texts/ falls back to A's (Hamlet, Shakespeare), so
-//          only Sherlock Holmes lives in B.
+//   /b/    version B, the new flow (public/office-printer-b/, the one MyiaOS ships). Texts fall back to
+//          labs/office-printer-b/texts (Sherlock Holmes), then A's (Hamlet, Shakespeare).
 //   /reader/  the immersive reader (labs/reader/), which B opens in a window; texts/ as for B.
 // Start it with "Start Office Printer A-B.cmd" beside this file.
 $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/');
 $a = realpath(__DIR__ . '/../public/office-printer');
-$b = realpath(__DIR__ . '/office-printer-b');
+$b = realpath(__DIR__ . '/../public/office-printer-b');
+$bTexts = realpath(__DIR__ . '/office-printer-b/texts');
 $reader = realpath(__DIR__ . '/reader');
 
 if ($path === '/' || $path === '/index.html') {
@@ -58,13 +59,13 @@ if (!preg_match('#^/(a|b|reader)/(.*)$#', $path, $m)) {
 $root = ['a' => $a, 'b' => $b, 'reader' => $reader][$m[1]];
 $rel = $m[2] === '' ? 'index.html' : $m[2];
 $file = realpath($root . '/' . $rel);
-// B and the Reader share the texts: their own first, then B's (Sherlock Holmes), then A's (Shakespeare).
+// B and the Reader share the texts: their own first, then Sherlock Holmes (labs), then A's (Shakespeare).
 if ($m[1] !== 'a' && $file === false && str_starts_with($rel, 'texts/')) {
-    $file = realpath($b . '/' . $rel) ?: realpath($a . '/' . $rel);
+    $file = realpath($bTexts . '/' . substr($rel, 6)) ?: realpath($a . '/' . $rel);
 }
 // Only files inside the version's own folder, or a texts/ folder: never ../ out of them.
 $inside = fn ($f, $dir) => $f !== false && str_starts_with($f, $dir . DIRECTORY_SEPARATOR) && is_file($f);
-if (!$inside($file, $root) && !$inside($file, $a . DIRECTORY_SEPARATOR . 'texts') && !$inside($file, $b . DIRECTORY_SEPARATOR . 'texts')) {
+if (!$inside($file, $root) && !$inside($file, $a . DIRECTORY_SEPARATOR . 'texts') && !$inside($file, $bTexts)) {
     http_response_code(404);
     echo 'Not found';
     return true;

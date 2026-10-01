@@ -1583,7 +1583,24 @@ textarea.field { resize: vertical; font: inherit; }
 .ast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; margin-bottom: 12px; }
 .ast-app { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; font-size: 13px; text-align: center; cursor: pointer; }
 .ast-app:hover, .ast-app:focus-visible { background: rgba(0, 0, 0, 0.06); }
+.ast-tile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.ast-app:disabled { opacity: .55; cursor: default; }
+.ast-install { align-self: center; }
 .ast-update { display: flex; flex-direction: column; gap: 4px; padding: 12px; margin: 8px 0; border: 1px solid var(--line, #ccc); border-radius: 8px; }
 .ast-update h3 { font-size: 13px; margin: 8px 0 0; }
 .ast-notes { white-space: pre-wrap; margin: 0; }
 @media (max-width: 520px) { .ast { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .ast-nav { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line, #ccc); } }
+
+/* Phones and touch screens, after every theme so no theme can shrink these again. A finger needs about 44px: the
+   Standard theme's 22px window buttons were missed on phones, and the Close button sat in the strip at the right edge
+   that Android keeps for its swipe-back gesture. The bar gets taller, the buttons finger-sized, and a gap on the right. */
+@media (max-width: 720px), (pointer: coarse) {
+  :root .win-bar, :root[data-theme] .win-bar { height: 44px; padding-right: 16px; }
+  :root .win-bar .win-buttons, :root[data-theme] .win-bar .win-buttons { gap: 6px; align-self: center; }
+  :root .win-bar .win-btn, :root[data-theme] .win-bar .win-btn { width: 44px; height: 38px; }
+  :root .win-bar .win-btn .glyph-min, :root[data-theme] .win-bar .win-btn .glyph-min { align-self: center; margin: 10px 0 0; }
+}
+/* The on-screen keyboard is open (src/core/keyboard.ts): the windows and any dialog fit in what is left visible above
+   it, and the taskbar, which would be under the keyboard, steps aside until it closes. */
+:root.kb-open #screen, :root.kb-open .backdrop { top: var(--vv-top); bottom: auto; height: var(--vv-h); }
+:root.kb-open #taskbar { display: none; }

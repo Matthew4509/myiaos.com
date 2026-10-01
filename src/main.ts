@@ -9,6 +9,7 @@ import { FilesVault } from './auth/files.ts';
 import { chooseEncryption, openFilesScreen, showRecoveryKey, signIn, unlockFirst } from './auth/gate.ts';
 import { forgetKeys } from './auth/vault.ts';
 import { h } from './core/dom.ts';
+import { fitAboveKeyboard } from './core/keyboard.ts';
 import { startDesktop } from './shell/shell.ts';
 import type { Account, Shell } from './shell/types.ts';
 import { BrowserStore } from './store/browser-store.ts';
@@ -162,5 +163,6 @@ async function boot(root: HTMLElement): Promise<void> {
   }
 }
 
+fitAboveKeyboard();
 const root = document.getElementById('root');
 if (root) boot(root).catch(error => fatal(root, error));

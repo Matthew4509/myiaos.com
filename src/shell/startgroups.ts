@@ -17,7 +17,7 @@ export const START_GROUPS: StartGroup[] = [
   { id: 'office', name: 'Office', apps: ['sheet', 'calendar', 'contacts'] },
   { id: 'internet', name: 'Internet', apps: ['mail', 'chat'] },
   { id: 'media', name: 'Graphics & media', apps: ['photoedit', 'youtube'] },
-  { id: 'games', name: 'Games', apps: ['planetziods', 'printer'] },
+  { id: 'games', name: 'Games', apps: ['planetziods', 'printer', 'officeprinter'] },
   { id: 'development', name: 'Development', apps: ['riscv', 'terminal'] },
   { id: 'system', name: 'System', apps: ['taskmanager', 'panel', 'trash'] },
   { id: 'settings', name: 'Settings', apps: ['settings', 'account', 'shortcuts'] },

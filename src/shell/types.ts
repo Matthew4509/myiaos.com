@@ -88,6 +88,10 @@ export interface Shell {
   /** The area icons are placed on; drags onto it drop into the Desktop folder. */
   registerApp(app: AppDef): void;
   hasApp(id: string): boolean;
+  /** The optional apps (src/release.ts OPTIONAL_APPS) this person has installed. */
+  readonly installedApps: ReadonlySet<string>;
+  /** Installs or removes an optional app for this person: their Start menu gains or loses it; a removed app's windows close. */
+  setInstalled(id: string, on: boolean): Promise<void>;
   openApp(id: string, arg?: string): Promise<void>;
   /** Opens a file or folder with whatever app handles it, or says why nothing does. */
   openPath(path: string): Promise<void>;
