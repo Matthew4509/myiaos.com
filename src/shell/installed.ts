@@ -1,15 +1,18 @@
-// Which optional apps (src/release.ts OPTIONAL_APPS) this person has installed: a short list in their own files, so it
-// follows them to every device and never changes anyone else's desktop. A missing or damaged list means none.
+// Which store apps (server/lib/appstore.php) this person has added to their desktop: a short list in their own files, so
+// it follows them to every device and never changes anyone else's desktop. A missing or damaged list means none. An
+// app on the list that is not on this server (deleted by the owner) is simply not shown.
 import type { FileSystem } from '../fs/fs.ts';
-import { OPTIONAL_APPS } from '../release.ts';
 
 export const INSTALLED_PATH = '/System/apps.json';
 
-/** Only names that are optional apps in this release; anything else in the file is ignored. */
+/** A store app's id, as the server checks it: lower-case letters and digits. */
+export const isStoreId = (id: unknown): id is string => typeof id === 'string' && /^[a-z][a-z0-9]{1,30}$/.test(id);
+
+/** Only names that can be store apps, once each; anything else in the file is ignored. */
 export function cleanInstalled(raw: unknown): string[] {
   const list = raw && typeof raw === 'object' ? (raw as { installed?: unknown }).installed : null;
   if (!Array.isArray(list)) return [];
-  return [...new Set(list.filter((id): id is string => typeof id === 'string' && OPTIONAL_APPS.includes(id)))];
+  return [...new Set(list.filter(isStoreId))];
 }
 
 export async function readInstalled(fs: FileSystem): Promise<string[]> {

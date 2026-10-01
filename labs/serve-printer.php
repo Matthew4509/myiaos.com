@@ -2,13 +2,13 @@
 // Local only: Office Printer A and B side by side on one port, to compare them.
 //   /      a page with the two links
 //   /a/    version A, the game as built (public/office-printer/, untouched)
-//   /b/    version B, the new flow (public/office-printer-b/, the one MyiaOS ships). Texts fall back to
+//   /b/    version B, the new flow (appstore-src/officeprinter/, the app store's copy). Texts fall back to
 //          labs/office-printer-b/texts (Sherlock Holmes), then A's (Hamlet, Shakespeare).
 //   /reader/  the immersive reader (labs/reader/), which B opens in a window; texts/ as for B.
 // Start it with "Start Office Printer A-B.cmd" beside this file.
 $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/');
 $a = realpath(__DIR__ . '/../public/office-printer');
-$b = realpath(__DIR__ . '/../public/office-printer-b');
+$b = realpath(__DIR__ . '/../appstore-src/officeprinter');
 $bTexts = realpath(__DIR__ . '/office-printer-b/texts');
 $reader = realpath(__DIR__ . '/reader');
 

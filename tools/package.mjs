@@ -7,11 +7,11 @@
 // Also builds dist/myiaos-aimodels-<version>.zip: the model mirror's folder (mirror/index.php), for myiaos.com/aimodels/.
 // Run from the repository folder:  npm run package
 import { execFileSync } from 'node:child_process';
-import { crc32, deflateRawSync } from 'node:zlib';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { headerList } from './headers.mjs';
+import { writeZip } from './zip.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
@@ -27,13 +27,10 @@ rmSync(stage, { recursive: true, force: true });
 rmSync(zip, { force: true });
 mkdirSync(web, { recursive: true });
 
-// Apps this release hides, and optional apps (src/release.ts): their pages stay out of the upload. An optional app is an
-// add-on each person chooses to install; it reaches a server separately (the app store), never inside this zip, so
-// nobody gets it without asking. Running from the repository, its files are there and Install offers it.
-const release = readFileSync(join(root, 'src', 'release.ts'), 'utf8');
-const listIn = (name) => JSON.parse((new RegExp(`${name}[^=]*=\\s*(\\[[^\\]]*\\])`).exec(release)?.[1] ?? '[]').replaceAll("'", '"'));
-const hidden = [...listIn('HIDDEN_APPS'), ...listIn('OPTIONAL_APPS')];
-const standAlone = { printer: 'office-printer', officeprinter: 'office-printer-b' };
+// Apps this release hides (src/release.ts, the one list): their stand-alone pages stay out of the upload. Add-on apps
+// (games and the like) are never in public/ at all: they come from the app store (appstore-src/, tools/store-publish.mjs).
+const hidden = JSON.parse((/HIDDEN_APPS[^=]*=\s*(\[[^\]]*\])/.exec(readFileSync(join(root, 'src', 'release.ts'), 'utf8'))?.[1] ?? '[]').replaceAll("'", '"'));
+const standAlone = { printer: 'office-printer' };
 const leftOut = hidden.map((id) => standAlone[id]).filter(Boolean);
 const outDir = join(root, 'out');
 
@@ -61,6 +58,13 @@ writeFileSync(join(web, '.htaccess'), [
   '  RewriteRule ^models/ api/modelfile.php [L]',
   '</IfModule>',
   htaccess,
+  '# Store apps run in a sandboxed frame (an origin of their own): their files, and the Reader they open, may be fetched',
+  '# across origins. Public files anyway.',
+  '<IfModule mod_headers.c>',
+  '  <If "%{REQUEST_URI} =~ m#^/(apps|reader)/#">',
+  '    Header always set Access-Control-Allow-Origin "*"',
+  '  </If>',
+  '</IfModule>',
   '# Browsers remember to use https for this site for a year (only sent over https).',
   '<IfModule mod_headers.c>',
   '  Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == \'on\'"',
@@ -121,6 +125,8 @@ account first), or run  php myiaos/tools/clear-brakes.php  from the cPanel Termi
 myiaos/data/accounts/throttle.json in File Manager). Addresses listed in trusted_ips (myiaos/config.php) are never held.
 Mail, YouTube video titles, the Reader's library and your own Claude or OpenRouter key need the PHP extension "openssl";
 Claude and saving AI models also need "curl" (server-check.php says).
+Games and other add-ons: the owner downloads them in the Application manager from the MyiaOS app store (only apps
+signed by MyiaOS; they land in public_html/apps/). That needs the PHP extensions "sodium", "zip" and "openssl".
 The built-in AI models are NOT in this zip: Qwen 3.5 0.8B (about 430 MB), Gemma 2 2B by Google (about
 1.4 GB) and Qwen 3.5 4B (about 2.2 GB). Without them it still works: each browser fetches the model from Hugging Face when it
 starts. To keep one on your own server (so browsers get it from here, and nothing is fetched from Hugging Face by
@@ -152,46 +158,6 @@ for (const f of webFiles.filter((x) => x.endsWith('.php'))) {
 }
 if (existsSync(join(priv, 'config.php'))) throw new Error('myiaos/config.php must never ship.');
 
-// The zip, written here (no outside tool): deflated entries, forward-slash names (Windows' own zipper writes
-// backslashes, which cPanel extracts as flat names), empty folders kept.
-function writeZip(from, to) {
-  const local = [];
-  const central = [];
-  let offset = 0;
-  const add = (name, data) => {
-    const nameBytes = Buffer.from(name, 'utf8');
-    const packed = data.length ? deflateRawSync(data) : Buffer.alloc(0);
-    const method = data.length ? 8 : 0;
-    const body = method ? packed : data;
-    const crc = crc32(data);
-    const head = Buffer.alloc(30);
-    head.writeUInt32LE(0x04034b50, 0); head.writeUInt16LE(20, 4); head.writeUInt16LE(0x0800, 6); head.writeUInt16LE(method, 8);
-    head.writeUInt32LE(crc, 14); head.writeUInt32LE(body.length, 18); head.writeUInt32LE(data.length, 22); head.writeUInt16LE(nameBytes.length, 26);
-    const dir = Buffer.alloc(46);
-    dir.writeUInt32LE(0x02014b50, 0); dir.writeUInt16LE(20, 4); dir.writeUInt16LE(20, 6); dir.writeUInt16LE(0x0800, 8); dir.writeUInt16LE(method, 10);
-    dir.writeUInt32LE(crc, 16); dir.writeUInt32LE(body.length, 20); dir.writeUInt32LE(data.length, 24); dir.writeUInt16LE(nameBytes.length, 28);
-    dir.writeUInt32LE(name.endsWith('/') ? 0x10 : 0, 38); dir.writeUInt32LE(offset, 42);
-    local.push(head, nameBytes, body);
-    central.push(dir, nameBytes);
-    offset += 30 + nameBytes.length + body.length;
-  };
-  const visit = dir => {
-    const names = readdirSync(dir).sort();
-    const rel = relative(from, dir).replaceAll(sep, '/');
-    if (!names.length && rel) add(rel + '/', Buffer.alloc(0));
-    for (const n of names) {
-      const p = join(dir, n);
-      if (statSync(p).isDirectory()) visit(p);
-      else add(relative(from, p).replaceAll(sep, '/'), readFileSync(p));
-    }
-  };
-  visit(from);
-  const size = central.reduce((n, b) => n + b.length, 0);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(central.length / 2, 8); end.writeUInt16LE(central.length / 2, 10);
-  end.writeUInt32LE(size, 12); end.writeUInt32LE(offset, 16);
-  writeFileSync(to, Buffer.concat([...local, ...central, end]));
-}
 writeZip(stage, zip);
 console.log(`Packaged ${webFiles.length} web files into ${relative(process.cwd(), zip)}`);
 

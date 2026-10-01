@@ -58,6 +58,9 @@ $types = [
     'html' => 'text/html; charset=utf-8', 'js' => 'text/javascript; charset=utf-8', 'css' => 'text/css; charset=utf-8',
     'json' => 'application/json', 'png' => 'image/png', 'svg' => 'image/svg+xml', 'ico' => 'image/x-icon',
     'woff2' => 'font/woff2', 'txt' => 'text/plain; charset=utf-8',
+    // Store apps (lib/appstore.php) may also carry these.
+    'mjs' => 'text/javascript; charset=utf-8', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp',
+    'mp3' => 'audio/mpeg', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav', 'mp4' => 'video/mp4', 'webm' => 'video/webm', 'wasm' => 'application/wasm',
 ];
 $ext = $file === false ? '' : strtolower(pathinfo($file, PATHINFO_EXTENSION));
 if ($file === false || !is_file($file) || strncmp($file, $root . DIRECTORY_SEPARATOR, strlen($root) + 1) !== 0 || !isset($types[$ext])) {
@@ -69,6 +72,11 @@ if ($file === false || !is_file($file) || strncmp($file, $root . DIRECTORY_SEPAR
     return true;
 }
 security_headers();
+// Store apps run in a sandboxed frame (an origin of their own), so their files and the Reader's they open are fetched
+// across origins: allowed, as on the live server (tools/package.mjs). They are public files anyway.
+if (preg_match('#^/(apps|reader)/#', $path)) {
+    header('Access-Control-Allow-Origin: *');
+}
 header('Content-Type: ' . $types[$ext]);
 header('Cache-Control: no-store');
 readfile($file);

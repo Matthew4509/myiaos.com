@@ -17,6 +17,9 @@ import { morePrinters } from './more.js';
 const params = new URLSearchParams(location.search);
 const speed = Math.min(50, Math.max(0.1, Number(params.get('speed')) || 1));
 const forcedReason = params.get('reason');
+// Where the Reader lives: beside this page (the demo), or where MyiaOS says (?reader=/reader/, a path on this same site).
+const readerAt = params.get('reader') ?? '';
+const READER = /^\/[A-Za-z0-9._\/-]*\/$/.test(readerAt) && !readerAt.includes('//') && !readerAt.includes('..') ? readerAt : '../reader/';
 
 const fill = (text, vars = {}) => String(text).replace(/\{(\w+)\}/g, (whole, k) => (k in vars ? vars[k] : whole));
 const num = n => Math.round(n).toLocaleString('en-GB');
@@ -346,7 +349,7 @@ function openReading() {
     let book;
     try {
       // The texts belong to the Reader (its library.json names them), so they are read from beside it.
-      book = makeBook(await loadLines(new URL(`../reader/${choice.file}`, location.href).pathname), choice.start, choice.end, choice.heads);
+      book = makeBook(await loadLines(new URL(`${READER}${choice.file}`, location.href).pathname), choice.start, choice.end, choice.heads);
     } catch (e) {
       readerSlot.replaceChildren(para(`${choice.title} could not be loaded: ${e.message}.`));
       return;
@@ -479,8 +482,14 @@ function authorNote(a) {
 
 /** The Reader app, in its own window over everything (the printer window stays open underneath). */
 function openReaderWindow(authorId, workId) {
+  // Inside MyiaOS (which says where its Reader is), the desktop opens the book in its own Reader window: this page runs
+  // sandboxed there and may not frame the Reader itself.
+  if (window.parent !== window && params.has('reader')) {
+    window.parent.postMessage({ type: 'myiaos-open-reader', author: authorId, work: workId ?? '' }, '*');
+    return;
+  }
   document.querySelector('.b-app-reader')?.remove();
-  const url = new URL('../reader/', location.href);
+  const url = new URL(READER, location.href);
   url.searchParams.set('author', authorId);
   url.searchParams.set('close', '1');
   if (workId) url.searchParams.set('work', workId);
@@ -796,7 +805,7 @@ async function start() {
   if (!res.ok) throw new Error(`script.json: ${res.status}`);
   S = await res.json();
   // The Reader's library: which works there are, where each starts in its text file, and its chapters.
-  const lib = await fetch('../reader/library.json');
+  const lib = await fetch(new URL(`${READER}library.json`, location.href));
   if (!lib.ok) throw new Error(`the Reader's library.json: ${lib.status}`);
   LIB = await lib.json();
   game = newGame();

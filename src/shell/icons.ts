@@ -328,6 +328,11 @@ export function iconDefs(): SVGElement {
 /** Icons that have a generated picture in public/icons/<name>.png. The rest are drawn from the shapes above. */
 const GENERATED = new Set<IconName>([]);
 
+/** True for a name this desktop can draw (a store app names its icon in the signed catalogue). */
+export function isIconName(name: string): name is IconName {
+  return GENERATED.has(name as IconName) || Object.hasOwn(SHAPES, name);
+}
+
 export function icon(name: IconName, size = 48): SVGElement {
   if (GENERATED.has(name)) {
     return svg('svg', { viewBox: '0 0 48 48', width: size, height: size, 'aria-hidden': 'true', focusable: 'false', class: 'icon' }, svg('image', { href: `icons/${name}.png`, width: 48, height: 48 }));

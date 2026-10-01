@@ -48,7 +48,10 @@ export const readerApp: AppDef = {
     const { shell, signal } = app;
     const fs = shell.fs;
     app.root.classList.add('reader-app');
-    const frame = h('iframe', { class: 'reader-app-frame', src: `reader/index.html${arg === 'library' ? '?author=gutenberg' : ''}`, title: 'Reader' });
+    // "library" opens the Gutenberg library; "work:<author>:<work>" one book (a store app asks for that, storeapp.ts).
+    const book = /^work:([a-z0-9-]{1,80}):([a-z0-9-]{0,80})$/.exec(arg ?? '');
+    const query = arg === 'library' ? '?author=gutenberg' : book ? `?${new URLSearchParams(book[2] ? { author: book[1], work: book[2] } : { author: book[1] })}` : '';
+    const frame = h('iframe', { class: 'reader-app-frame', src: `reader/index.html${query}`, title: 'Reader' });
     app.root.append(frame);
 
     async function readShelf(): Promise<SavedBook[]> {

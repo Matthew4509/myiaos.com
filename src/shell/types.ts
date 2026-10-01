@@ -43,6 +43,8 @@ export interface AppDef {
   start?: boolean;
   /** Opening it again with the same argument focuses the open window instead of making another. */
   single?: boolean;
+  /** The Start menu group for an app no group lists by name (store apps say theirs). */
+  group?: string;
   launch(handle: AppHandle, arg?: string): void | Promise<void>;
 }
 
@@ -88,9 +90,13 @@ export interface Shell {
   /** The area icons are placed on; drags onto it drop into the Desktop folder. */
   registerApp(app: AppDef): void;
   hasApp(id: string): boolean;
-  /** The optional apps (src/release.ts OPTIONAL_APPS) this person has installed. */
+  /** The store apps this person has added to their desktop (src/shell/installed.ts), whether or not on this server. */
   readonly installedApps: ReadonlySet<string>;
-  /** Installs or removes an optional app for this person: their Start menu gains or loses it; a removed app's windows close. */
+  /** The store apps on this server (api/apps.php), by id. */
+  readonly storeApps: ReadonlyMap<string, import('../apps/storeapp.ts').StoreApp>;
+  /** The server's store apps changed (the owner downloaded or deleted one): registers what this person has added. */
+  setStoreApps(apps: import('../apps/storeapp.ts').StoreApp[]): void;
+  /** Adds a store app on this server to this person's desktop, or takes it off (its windows close). */
   setInstalled(id: string, on: boolean): Promise<void>;
   openApp(id: string, arg?: string): Promise<void>;
   /** Opens a file or folder with whatever app handles it, or says why nothing does. */

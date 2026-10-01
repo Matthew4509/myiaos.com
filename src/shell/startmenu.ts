@@ -74,7 +74,7 @@ export class StartMenu {
     const all = shell.apps().filter((a: AppDef) => a.start);
     const byId = new Map(all.map(a => [a.id, a]));
     const listed = all.filter(a => !FOOT_APPS.includes(a.id));
-    const groups = groupsFor(listed.map(a => a.id));
+    const groups = groupsFor(listed.map(a => a.id), Object.fromEntries(listed.map(a => [a.id, a.group])));
     const pinned = () => pinnedFor(shell.session.data.pinned, listed.map(a => a.id));
 
     const filter = h('input', { type: 'search', class: 'field start-filter', placeholder: 'Find an app or folder', 'aria-label': 'Find an app or folder', autocomplete: 'off', spellcheck: false });

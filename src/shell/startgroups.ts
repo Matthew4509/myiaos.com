@@ -17,7 +17,7 @@ export const START_GROUPS: StartGroup[] = [
   { id: 'office', name: 'Office', apps: ['sheet', 'calendar', 'contacts'] },
   { id: 'internet', name: 'Internet', apps: ['mail', 'chat'] },
   { id: 'media', name: 'Graphics & media', apps: ['photoedit', 'youtube'] },
-  { id: 'games', name: 'Games', apps: ['planetziods', 'printer', 'officeprinter'] },
+  { id: 'games', name: 'Games', apps: ['planetziods', 'printer'] },
   { id: 'development', name: 'Development', apps: ['riscv', 'terminal'] },
   { id: 'system', name: 'System', apps: ['taskmanager', 'panel', 'trash'] },
   { id: 'settings', name: 'Settings', apps: ['settings', 'account', 'shortcuts'] },
@@ -30,11 +30,19 @@ export const GROUP_ICON: IconName = 'folder';
 /** A Start-menu app that no group names still appears, in "Other" (as Xfce does), so nothing can go missing. */
 export const OTHER_GROUP: StartGroup = { id: 'other', name: 'Other', apps: [] };
 
-/** The groups for the apps that exist, each app filed once; apps no group names go to Other. */
-export function groupsFor(appIds: string[]): StartGroup[] {
+/** The groups for the apps that exist, each app filed once; an app no group names goes to the group it asks for
+ *  (`groupOf`, store apps), else to Other. */
+export function groupsFor(appIds: string[], groupOf: Record<string, string | undefined> = {}): StartGroup[] {
   const known = new Set(appIds);
   const filed = new Set<string>(FOOT_APPS);
   const out = START_GROUPS.map(g => ({ ...g, apps: g.apps.filter(id => known.has(id) && !filed.has(id) && (filed.add(id), true)) }));
+  for (const id of appIds) {
+    const g = out.find(x => x.id === groupOf[id]);
+    if (g && !filed.has(id)) {
+      g.apps.push(id);
+      filed.add(id);
+    }
+  }
   const other = appIds.filter(id => !filed.has(id));
   if (other.length) out.push({ ...OTHER_GROUP, apps: other });
   return out.filter(g => g.apps.length);
