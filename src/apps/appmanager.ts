@@ -5,7 +5,7 @@
 import { h, on } from '../core/dom.ts';
 import { formatSize } from '../core/format.ts';
 import { ServiceApi } from '../net/service.ts';
-import { HIDDEN_APPS, OPTIONAL_APPS } from '../release.ts';
+import { HIDDEN_APPS, OPTIONAL_APPS, OPTIONAL_PAGES } from '../release.ts';
 import { icon, type IconName } from '../shell/icons.ts';
 import type { AppDef } from '../shell/types.ts';
 import { APPS } from './catalog.ts';
@@ -54,6 +54,15 @@ export const appManagerApp: AppDef = {
     });
     nav.append(...buttons.map(x => x.b));
 
+    // Which optional apps' files are on this server (the release zip leaves them out; see src/release.ts).
+    const present = new Set<string>();
+    await Promise.all(OPTIONAL_APPS.map(async id => {
+      const page = OPTIONAL_PAGES[id];
+      const res = page ? await fetch(page, { method: 'HEAD', cache: 'no-store', signal }).catch(() => null) : null;
+      if (res?.ok) present.add(id);
+    }));
+    if (signal.aborted) return;
+
     function paint(): void {
       for (const { k, b } of buttons) b.setAttribute('aria-current', String(k.id === showing));
       if (showing === 'updates') { void paintUpdates(); return; }
@@ -67,6 +76,8 @@ export const appManagerApp: AppDef = {
           const b = h('button', { type: 'button', class: 'ast-app', disabled: !installed }, icon(a.icon as IconName, 48), h('span', {}, a.title));
           on(b, 'click', () => void shell.openApp(a.id), signal);
           if (!optional) return h('div', { class: 'ast-tile', role: 'listitem' }, b);
+          // Not on this server, and not installed: nothing to install yet. It arrives with the app store.
+          if (!installed && !present.has(a.id)) return h('div', { class: 'ast-tile', role: 'listitem' }, b, h('span', { class: 'hint ast-later' }, 'Not on this server yet'));
           // An optional app: this person adds it to their own Start menu, or takes it off again.
           const toggle = h('button', { type: 'button', class: `btn ast-install${installed ? '' : ' primary'}` }, installed ? 'Remove' : 'Install');
           on(toggle, 'click', () => {

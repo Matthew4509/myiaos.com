@@ -27,9 +27,13 @@ rmSync(stage, { recursive: true, force: true });
 rmSync(zip, { force: true });
 mkdirSync(web, { recursive: true });
 
-// Apps this release hides (src/release.ts, the one list): their stand-alone pages stay out of the upload.
-const hidden = JSON.parse((/HIDDEN_APPS[^=]*=\s*(\[[^\]]*\])/.exec(readFileSync(join(root, 'src', 'release.ts'), 'utf8'))?.[1] ?? '[]').replaceAll("'", '"'));
-const standAlone = { printer: 'office-printer' };
+// Apps this release hides, and optional apps (src/release.ts): their pages stay out of the upload. An optional app is an
+// add-on each person chooses to install; it reaches a server separately (the app store), never inside this zip, so
+// nobody gets it without asking. Running from the repository, its files are there and Install offers it.
+const release = readFileSync(join(root, 'src', 'release.ts'), 'utf8');
+const listIn = (name) => JSON.parse((new RegExp(`${name}[^=]*=\\s*(\\[[^\\]]*\\])`).exec(release)?.[1] ?? '[]').replaceAll("'", '"'));
+const hidden = [...listIn('HIDDEN_APPS'), ...listIn('OPTIONAL_APPS')];
+const standAlone = { printer: 'office-printer', officeprinter: 'office-printer-b' };
 const leftOut = hidden.map((id) => standAlone[id]).filter(Boolean);
 const outDir = join(root, 'out');
 

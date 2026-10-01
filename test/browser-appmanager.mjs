@@ -115,6 +115,16 @@ await step('Remove closes its window and takes it off the Start menu; that too s
   ok(!(await startHas('Office Printer')), 'back after a reload');
 });
 
+await step('installed from the release zip (its files left out): no Install, it says it is not on this server yet', async () => {
+  await page.route('**/office-printer-b/**', route => route.fulfill({ status: 404, body: 'Not found' }));
+  const win = await openManager();
+  const t = tile(win);
+  await t.getByText('Not on this server yet').waitFor({ timeout: 10000 });
+  ok(await t.getByRole('button', { name: 'Install' }).count() === 0, 'Install is offered without the files');
+  await win.locator('.win-close').click();
+  await page.unroute('**/office-printer-b/**');
+});
+
 await step('no page errors in the whole run', async () => ok(problems.length === 0, problems.join(' | ')));
 
 await browser.close();

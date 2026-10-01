@@ -1585,7 +1585,8 @@ textarea.field { resize: vertical; font: inherit; }
 .ast-app:hover, .ast-app:focus-visible { background: rgba(0, 0, 0, 0.06); }
 .ast-tile { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
 .ast-app:disabled { opacity: .55; cursor: default; }
-.ast-install { align-self: center; }
+.ast-install, .ast-later { align-self: center; }
+.ast-later { font-size: 12px; text-align: center; }
 .ast-update { display: flex; flex-direction: column; gap: 4px; padding: 12px; margin: 8px 0; border: 1px solid var(--line, #ccc); border-radius: 8px; }
 .ast-update h3 { font-size: 13px; margin: 8px 0 0; }
 .ast-notes { white-space: pre-wrap; margin: 0; }
