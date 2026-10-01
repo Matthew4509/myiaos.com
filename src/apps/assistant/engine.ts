@@ -31,7 +31,7 @@ export interface ChatTurn {
  */
 export const BUILT_IN_MODELS = [
   { id: 'Qwen3.5-0.8B-q4f32_1-MLC', name: 'Qwen 3.5 0.8B', maker: 'Qwen team, Alibaba Cloud', licence: 'Apache-2.0', note: 'the quickest and smallest; fine for short jobs' },
-  { id: 'gemma-2-2b-it-q4f32_1-MLC', name: 'Gemma 2 2B', maker: 'Google', licence: 'Gemma Terms of Use', note: 'a warmer, more natural talker; slower, needs more graphics memory' },
+  { id: 'gemma-2-2b-it-q4f32_1-MLC', name: 'Gemma 2 2B', maker: 'Google', licence: 'Gemma Terms of Use', note: 'the middle size; slower, needs more graphics memory' },
   { id: 'Qwen3.5-4B-q4f32_1-MLC', name: 'Qwen 3.5 4B', maker: 'Qwen team, Alibaba Cloud', licence: 'Apache-2.0', note: 'the best answers of the three and the slowest; needs the most graphics memory' },
 ] as const;
 export const DEFAULT_MODEL = BUILT_IN_MODELS[0].id;
