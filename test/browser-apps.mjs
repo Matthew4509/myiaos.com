@@ -683,7 +683,7 @@ await step('Assistant: two halves, the built-in AI left and Claude right; says w
   // Each is named with its maker (his: "in the listing, it should identify the model").
   ok(options.length === 3 && /^Qwen 3\.5 0\.8B by Qwen team, Alibaba Cloud \(/.test(options[0]) && /^Gemma 2 2B by Google \(/.test(options[1]) && /^Qwen 3\.5 4B by Qwen team, Alibaba Cloud \(/.test(options[2]), options.join(' | '));
   await pick.selectOption({ index: 1 });
-  ok(/^Gemma 2 2B, made by Google \(Gemma Terms of Use\): a warmer/.test(await left.locator('.ai-note').innerText()), 'the choice says who made it and what it trades');
+  ok(/^Gemma 2 2B, made by Google \(Gemma Terms of Use\): the middle size/.test(await left.locator('.ai-note').innerText()), 'the choice says who made it and what it trades');
   await pick.selectOption({ index: 2 });
   ok(/^Qwen 3\.5 4B, made by Qwen team, Alibaba Cloud \(Apache-2\.0\): the best answers/.test(await left.locator('.ai-note').innerText()), 'the 4B says what it trades');
   await pick.selectOption({ index: 0 });
