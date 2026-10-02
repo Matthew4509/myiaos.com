@@ -1,4 +1,4 @@
-// The page's side of the desktop's smaller server APIs (youtube.php, mail.php), which sit beside auth.php. The same
+// The page's side of the desktop's smaller server APIs (mail.php, models.php and the like), which sit beside auth.php. The same
 // rules as the accounts API: this site only, the desktop's own header, the session cookie (HttpOnly; no script sees
 // it), and the server's words when it refuses.
 import { AuthFailure } from '../auth/api.ts';

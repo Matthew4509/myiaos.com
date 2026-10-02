@@ -7,7 +7,7 @@ PORT="${1:-3043}"
 PARENT="${2:-${TMPDIR:-/tmp}}"
 PHP="${PHP_BIN:-php}"
 export PHP_BIN="$PHP"
-# Mail and YouTube titles need openssl (and mbstring for mail headers). A portable Windows PHP has them in ext/ but not
+# Mail and the Reader's library need openssl (and mbstring for mail headers). A portable Windows PHP has them in ext/ but not
 # switched on in its shared php.ini, and has no CA list of its own; pass both here rather than editing that php.ini.
 PHPDIR="$(dirname "$PHP")"
 PHP_FLAGS=""

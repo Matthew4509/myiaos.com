@@ -6,7 +6,6 @@
 import { h, on } from '../core/dom.ts';
 import { baseName } from '../fs/names.ts';
 import type { AppDef } from '../shell/types.ts';
-import { parseClip } from './youtube/links.ts';
 import { APPS } from './catalog.ts';
 
 /** A full http(s) address, or null. */
@@ -58,21 +57,14 @@ export const linkApp: AppDef = {
       return;
     }
     const target = url;
-    // A YouTube link can play here, in YouTube Player.
-    const clip = parseClip(target.href);
-    const playBtn = h('button', { type: 'button', class: 'btn primary' }, 'Play in YouTube Player');
-    const openBtn = h('button', { type: 'button', class: clip ? 'btn' : 'btn primary' }, 'Open in a new tab');
+    const openBtn = h('button', { type: 'button', class: 'btn primary' }, 'Open in a new tab');
     const copyBtn = h('button', { type: 'button', class: 'btn' }, 'Copy address');
     app.root.append(h('div', { class: 'pad' },
       h('p', {}, 'This link goes to:'),
       h('p', { class: 'link-host' }, target.hostname),
       h('p', { class: 'link-full' }, target.href),
       h('p', { class: 'hint' }, 'It opens in a new tab of your browser, where your own sign-ins work. The desktop stays open in this tab.'),
-      h('div', { class: 'row-buttons' }, ...(clip ? [playBtn] : []), openBtn, copyBtn)));
-    on(playBtn, 'click', () => {
-      void shell.openApp('youtube', target.href);
-      app.close();
-    }, app.signal);
+      h('div', { class: 'row-buttons' }, openBtn, copyBtn)));
     on(openBtn, 'click', () => {
       openInNewTab(target);
       app.close();

@@ -2,7 +2,7 @@
   "name": "myiaos",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
-  "version": "0.1.03",
+  "version": "0.1.04",
   "type": "module",
   "description": "A private desktop in the browser. All program code is this project's own except the MIT-licensed libraries bundled in public/vendor (built from vendor-src/, listed on About > Credits).",
   "scripts": {

@@ -123,7 +123,7 @@ cPanel Terminal, not the web).
 Held out by the sign-in brakes (wrong passwords): wait, use "Email me an unlock link" (set an unlock email in My
 account first), or run  php myiaos/tools/clear-brakes.php  from the cPanel Terminal (or delete
 myiaos/data/accounts/throttle.json in File Manager). Addresses listed in trusted_ips (myiaos/config.php) are never held.
-Mail, YouTube video titles, the Reader's library and your own Claude or OpenRouter key need the PHP extension "openssl";
+Mail, the Reader's library and your own Claude or OpenRouter key need the PHP extension "openssl";
 Claude and saving AI models also need "curl" (server-check.php says).
 Games and other add-ons: the owner downloads them in the Application manager from the MyiaOS app store (only apps
 signed by MyiaOS; they land in public_html/apps/). That needs the PHP extensions "sodium", "zip" and "openssl".

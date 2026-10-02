@@ -1,5 +1,5 @@
 <?php
-// Requests the server makes to other sites (YouTube video titles; later the update check), and a per-person rate limit.
+// Requests the server makes to other sites (the Reader's library, app store, models, updates, AI keys), and a per-person rate limit.
 // Only https, the certificate is always checked, answers are capped in size, and every fault becomes plain words.
 declare(strict_types=1);
 

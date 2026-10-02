@@ -313,17 +313,52 @@ interface PageAI {
   release: (() => void) | null;
   /** Why the model last stopped, for the words the apps show. */
   stopped: StopReason | null;
+  /** The model that stopped last, so it can be started again by itself (after "Disconnect when idle"). */
+  lastModel: LoadableModel | null;
+  /** When a question was last asked or answered (or the model started), in milliseconds. */
+  lastUsed: number;
+  /** Questions asked and not yet answered (waiting or being written). */
+  asking: number;
 }
-/** disconnect: someone pressed Disconnect; lost: the graphics chip was reset; closed: the last app using it closed. */
-export type StopReason = 'disconnect' | 'lost' | 'closed' | 'replaced';
-const page: PageAI = { model: null, engine: null, starting: null, users: 0, forget: false, queue: Promise.resolve(), writer: null, release: null, stopped: null };
+/**
+ * disconnect: someone pressed Disconnect; lost: the graphics chip was reset; closed: the last app using it closed;
+ * idle: "Disconnect when idle" stopped it after a while without a question.
+ */
+export type StopReason = 'disconnect' | 'lost' | 'closed' | 'replaced' | 'idle';
+const page: PageAI = { model: null, engine: null, starting: null, users: 0, forget: false, queue: Promise.resolve(), writer: null, release: null, stopped: null, lastModel: null, lastUsed: 0, asking: 0 };
 const watchers = new Set<() => void>();
 function changed(): void {
   for (const fn of [...watchers]) fn();
 }
 
+// "Disconnect when idle": one timer for the whole page, set by whichever app changes the setting.
+let idleMs: number | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+function used(): void {
+  page.lastUsed = Date.now();
+  armIdle();
+}
+function armIdle(): void {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = null;
+  if (idleMs === null || !page.engine) return;
+  idleTimer = setTimeout(() => {
+    idleTimer = null;
+    void idleCheck();
+  }, Math.max(250, page.lastUsed + idleMs - Date.now()));
+  (idleTimer as { unref?: () => void }).unref?.();
+}
+async function idleCheck(): Promise<void> {
+  if (idleMs === null || !page.engine) return;
+  if (page.asking > 0 || page.starting || Date.now() - page.lastUsed < idleMs) return armIdle();
+  await stopEngine('idle');
+}
+
 async function stopEngine(why: StopReason): Promise<void> {
   const { engine, model, forget, release } = page;
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = null;
+  page.lastModel = model ?? page.lastModel;
   page.engine = null;
   page.model = null;
   page.forget = false;
@@ -345,6 +380,20 @@ export class OnDevice {
   /** The model running in this page, whichever app started it; null when none is. */
   static running(): LoadableModel | null {
     return page.engine ? page.model : null;
+  }
+
+  /**
+   * "Disconnect when idle": after `minutes` without a question the model stops for the whole page and its graphics
+   * memory is freed (its files stay in this browser, so it starts again quickly). null: it keeps running.
+   */
+  static idleAfter(minutes: number | null): void {
+    idleMs = minutes === null ? null : Math.max(0.01, minutes) * 60_000;
+    armIdle();
+  }
+
+  /** The model that last stopped (any reason), to start the same one again; null before any has. */
+  static lastModel(): LoadableModel | null {
+    return page.lastModel;
   }
 
   /** `fn` is called whenever a model starts or stops in this page, until `signal` ends. */
@@ -405,6 +454,7 @@ export class OnDevice {
         page.model = model;
         page.release = release;
         page.stopped = null;
+        used();
       } catch (error) {
         release();
         throw error;
@@ -423,7 +473,12 @@ export class OnDevice {
    * `looped` when it was stopped for repeating itself. Waits while another app's answer is being written.
    */
   ask(turns: ChatTurn[], onText: (text: string) => void, maxTokens = MAX_ANSWER): Promise<{ text: string; tokens: number; perSecond: number; looped: boolean }> {
-    const run = page.queue.then(() => this.write(turns, onText, maxTokens));
+    page.asking++;
+    used();
+    const run = page.queue.then(() => this.write(turns, onText, maxTokens)).finally(() => {
+      page.asking = Math.max(0, page.asking - 1);
+      used();
+    });
     page.queue = run.catch(() => undefined);
     return run;
   }

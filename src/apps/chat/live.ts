@@ -9,12 +9,51 @@ import { listThreads, openThread, saveThread, type AgentThread, type AgentTurn }
 /** What changed: the thread (another one opened, or a message added), the answer being written, or who is busy. */
 export type LiveChange = 'thread' | 'pending' | 'busy';
 
+/** An answer being written: by whom, the text so far, and how it is going (for the line under it). */
+export interface Pending {
+  by: string;
+  text: string;
+  /** When the question was sent, and when the first piece of the answer came (null until it has), in milliseconds. */
+  started: number;
+  first: number | null;
+  /** Pieces received so far (for the built-in AI, one per word-piece). */
+  pieces: number;
+  /** The built-in AI on this device (its speed is shown); false for Claude and OpenRouter. */
+  device: boolean;
+}
+
+/** A word-piece is what the model writes one at a time: about four make three words. */
+export const PIECE_HINT = 'A piece is part of a word: about four pieces make three words.';
+
+const secs = (ms: number): number => Math.max(0, Math.round(ms / 1000));
+
+/** The line under an answer being written: "Reading your question... 6 s", then "Writing: 4.8 pieces a second · 21 s". */
+export function writingWords(p: Pending, now = Date.now()): string {
+  const total = secs(now - p.started);
+  if (p.first === null) return p.device ? `Reading your question... ${total} s` : `Waiting for ${p.by}... ${total} s`;
+  const span = (now - p.first) / 1000;
+  if (!p.device || span < 1 || p.pieces < 2) return `Writing... ${total} s`;
+  return `Writing: ${((p.pieces - 1) / span).toFixed(1)} pieces a second · ${total} s`;
+}
+
+/**
+ * The line under a finished answer (this session only; the name of the AI is already above it): how long it took,
+ * and for the built-in AI where it ran and how fast it wrote. `perSecond` is the engine's own measure, when it gives one.
+ */
+export function footWords(p: Pending, now = Date.now(), perSecond = 0): string {
+  const total = secs(now - p.started);
+  if (!p.device) return `Answered in ${total} s`;
+  const span = p.first === null ? 0 : (now - p.first) / 1000;
+  const rate = perSecond > 0 ? perSecond : span >= 1 && p.pieces > 1 ? (p.pieces - 1) / span : 0;
+  return `Answered in ${total} s on this device${rate ? ` · ${rate.toFixed(1)} pieces a second` : ''}`;
+}
+
 const chats = new WeakMap<object, LiveChat>();
 
 export class LiveChat {
   thread: AgentThread = { title: '', turns: [] };
   /** The answer being written, as far as it has got, so every view can show it; null when none is. */
-  pending: { by: string; text: string } | null = null;
+  pending: Pending | null = null;
   /** A question is being answered: the other views wait (the AI writes one answer at a time). */
   busy = false;
   /** The line under an answer written this session (who wrote it, that nothing left the device, how long it took). */

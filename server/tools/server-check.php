@@ -30,8 +30,8 @@ foreach (['json', 'hash'] as $ext) {
 }
 line(defined('PASSWORD_ARGON2ID'), 'Argon2id password hashing', 'Passwords still work (bcrypt is used instead), but ask the host for PHP built with Argon2 for stronger hashing.');
 line(function_exists('random_bytes'), 'Secure random numbers');
-// Mail and YouTube titles connect to other servers; both need secure connections, and Mail folder names need mbstring.
-line(extension_loaded('openssl'), 'PHP extension: openssl (Mail, YouTube titles, Claude)', 'Tick "openssl" in cPanel > Select PHP Version > Extensions. Without it Mail and YouTube titles cannot connect; the rest of the desktop works.');
+// Mail and the Reader's library connect to other servers; both need secure connections, and Mail folder names need mbstring.
+line(extension_loaded('openssl'), 'PHP extension: openssl (Mail, Reader books, Claude)', 'Tick "openssl" in cPanel > Select PHP Version > Extensions. Without it Mail and Reader books cannot connect; the rest of the desktop works.');
 line(extension_loaded('curl'), 'PHP extension: curl (your own Claude or OpenRouter key; saving AI models to this MyiaOS)', 'Tick "curl" in cPanel > Select PHP Version > Extensions. Without it Claude answers can arrive all at once at the end instead of as they are written, and the owner cannot save AI models here (browsers then fetch them from Hugging Face).');
 line(is_file(dirname(__DIR__) . '/vendor/autoload.php'), 'Claude library present (myiaos/vendor)', 'Extract the whole MyiaOS zip again: myiaos/vendor/ is missing.');
 line(extension_loaded('mbstring'), 'PHP extension: mbstring (Mail folder names in other languages)', 'Tick "mbstring" in cPanel > Select PHP Version > Extensions. Without it, folder names with accents may look odd in Mail.');

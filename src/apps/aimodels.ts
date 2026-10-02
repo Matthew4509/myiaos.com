@@ -1,5 +1,6 @@
 // Find AI models: search Hugging Face for more on-device models and add them to your own list, which Chat › Agents
-// then offers beside the built-in ones. The person types words and narrows with
+// then offers beside the built-in ones. "Good places to start" lists a few well-known ones by the kind of computer
+// (assistant/suggest.ts), each with the graphics memory it needs and an Add button. The person types words and narrows with
 // drop-downs (size, kind of compression, order); results are the models the built-in engine can run (assistant/
 // hfsearch.ts has the rule). An added model is fetched from Hugging Face by this browser when started; it is never
 // saved on the server (the owner's Save is for the built-in models only).
@@ -7,6 +8,7 @@ import { h, on } from '../core/dom.ts';
 import { formatSize } from '../core/format.ts';
 import type { AppDef } from '../shell/types.ts';
 import { APPS } from './catalog.ts';
+import { pickBuild, SUGGESTED } from './assistant/suggest.ts';
 import {
   describe, HF, isBuiltIn, KIND_FILTERS, passes, readMyModels, searchHF, SIZE_FILTERS, SORTS, toMyModel, writeMyModels,
   type Filters, type Found, type Listed, type MyModel,
@@ -34,6 +36,15 @@ export const aiModelsApp: AppDef = {
     const go = h('button', { type: 'submit', class: 'btn primary' }, 'Search');
     const form = h('form', { class: 'aim-bar' }, query, go, h('label', { class: 'aim-lab' }, 'Size ', size), h('label', { class: 'aim-lab' }, 'Kind ', kind), h('label', { class: 'aim-lab' }, 'Order ', sort));
     const mineBox = h('div', { class: 'aim-mine' });
+    const startBox = h('div', { class: 'aim-start' });
+    // Half precision (newer graphics chips) takes the smaller, quicker builds; older chips the ones that run everywhere.
+    let halfPrecision = false;
+    try {
+      const adapter = await (navigator as Navigator & { gpu?: { requestAdapter(): Promise<{ features: Set<string> } | null> } }).gpu?.requestAdapter();
+      halfPrecision = !!adapter?.features.has('shader-f16');
+    } catch {
+      halfPrecision = false;
+    }
     const results = h('div', { class: 'aim-results', role: 'list', 'aria-label': 'Models found' });
     const more = h('button', { type: 'button', class: 'btn', hidden: true }, 'Show more');
     const status = h('div', { class: 'statusbar', role: 'status' });
@@ -41,6 +52,9 @@ export const aiModelsApp: AppDef = {
       form,
       h('div', { class: 'aim-body' },
         h('p', { class: 'hint aim-warn' }, 'These models are made and uploaded by other people. MyiaOS checks only that its engine can run one, not what it says or how good it is. Read a model\'s card (its licence, and whether it is made for chat) before you add it. An added model downloads from Hugging Face into this browser when you start it.'),
+        h('h2', { class: 'aim-head' }, 'Good places to start'),
+        h('p', { class: 'hint' }, 'A few well-known models for each kind of computer. A smaller model answers sooner; a larger one answers better but needs more graphics memory. You can search for anything above.'),
+        startBox,
         h('h2', { class: 'aim-head' }, 'My models'), mineBox,
         h('h2', { class: 'aim-head' }, 'Found on Hugging Face'), results, more),
       status,
@@ -67,7 +81,36 @@ export const aiModelsApp: AppDef = {
         await shell.report('Could not save your list of models', error);
       }
       paintMine();
+      paintStart();
       repaintResults();
+    }
+
+    function paintStart(): void {
+      startBox.replaceChildren(...SUGGESTED.map(group => h('div', { class: 'aim-group' },
+        h('h3', { class: 'aim-group-head' }, group.title, h('span', { class: 'aim-spec' }, ` (${group.spec})`)),
+        ...group.models.map(m => pickBuild(m, halfPrecision)).filter(m => !!m).map(m => {
+          const have = mine.some(x => x.repo === m.repo);
+          const add = h('button', { type: 'button', class: 'btn primary', disabled: have || m.builtIn }, m.builtIn ? 'Built in' : have ? 'Added' : 'Add');
+          on(add, 'click', async () => {
+            add.disabled = true;
+            status.textContent = `Reading ${m.name}'s details from Hugging Face...`;
+            const found = await describe({ repo: m.repo, downloads: 0, likes: 0, updated: '' });
+            const row = toMyModel(found);
+            if (!row) {
+              status.textContent = `${m.name} could not be read from Hugging Face just now, or MyiaOS's engine cannot run it. Try again in a minute.`;
+              add.disabled = false;
+              return;
+            }
+            if (mine.some(x => x.repo === row.repo)) return;
+            mine = [...mine, row];
+            await save(`${m.name} was added. Choose it in Chat › Agents.`);
+          }, signal);
+          return h('div', { class: 'aim-row', role: 'listitem' },
+            h('div', { class: 'aim-main' },
+              h('strong', {}, `${m.name} by ${m.maker}`),
+              h('span', { class: 'aim-meta' }, `about ${(m.vram / 1024).toFixed(1)} GB of graphics memory · ${m.quant}${m.builtIn ? ' · already in MyiaOS' : ''}`)),
+            cardLink(m.repo), add);
+        }))));
     }
 
     const cardLink = (repo: string) => h('a', { class: 'btn', href: `${HF}/${repo}`, target: '_blank', rel: 'noopener noreferrer', title: 'Opens the model\'s page on Hugging Face in a new browser tab' }, 'Model card');
@@ -155,6 +198,7 @@ export const aiModelsApp: AppDef = {
     on(more, 'click', () => void fill(run), signal);
 
     paintMine();
+    paintStart();
     status.textContent = 'Type a name (or nothing, for the most downloaded) and press Search.';
     query.focus();
   },

@@ -13,8 +13,7 @@
     ],
     "img-src": [
       "'self'",
-      "blob:",
-      "https://i.ytimg.com"
+      "blob:"
     ],
     "media-src": [
       "'self'",
@@ -39,8 +38,7 @@
       "'none'"
     ],
     "frame-src": [
-      "'self'",
-      "https://www.youtube-nocookie.com"
+      "'self'"
     ],
     "frame-ancestors": [
       "'self'"
@@ -53,8 +51,6 @@
     ]
   },
   "why": {
-    "https://i.ytimg.com": "YouTube Player: the small pictures beside search results and saved videos (YouTube's own picture server).",
-    "https://www.youtube-nocookie.com": "YouTube Player: YouTube's own player, in its privacy-enhanced form (no cookies until a video plays).",
     "'wasm-unsafe-eval'": "The built-in AI (Chat Agents): lets the page run WebAssembly, the compiled program WebLLM uses on the graphics chip. It does not allow JavaScript eval or scripts from text.",
     "https://huggingface.co": "Chat Agents: a built-in AI model that is NOT saved on this MyiaOS, or one a person added, is fetched from Hugging Face, where its makers publish it; Find AI models searches it. Only model files and the search; nothing typed to an AI is sent.",
     "https://*.hf.co": "Chat Agents: Hugging Face hands its model files out from its file servers (us.aws.cdn.hf.co and the like), to which huggingface.co redirects.",

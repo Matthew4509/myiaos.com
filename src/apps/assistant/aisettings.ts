@@ -2,6 +2,8 @@
 // Agents (and the Panel's chat); this part only chooses and keeps things.
 //   Built-in AI: which models there are and where each comes from; the owner can save a model's files on this MyiaOS
 //   (so browsers fetch it from here, not Hugging Face) or remove them; Find AI models adds more.
+//   Your model list: each person's favourites (listed first in Chat › Agents), models hidden from that list, and
+//   "Disconnect when idle" (assistant/prefs.ts).
 //   Claude: the person's own Anthropic key, model and monthly limit (claude.ts).
 //   OpenRouter: the person's own OpenRouter key, for hundreds of models from many makers (openrouter.ts).
 import { h, on } from '../../core/dom.ts';
@@ -12,6 +14,8 @@ import { BUILT_IN_MODELS, checkDevice, modelLabel } from './engine.ts';
 import { claudeSection } from './claude.ts';
 import { openRouterSection } from './openrouter.ts';
 import { listModels, removeModel, saveModel, sourceWords, withMyModels, type ModelInfo } from './models.ts';
+import { IDLE_MINUTES, readPrefs, withFavourite, withHidden, writePrefs, type AiPrefs } from './prefs.ts';
+import { OnDevice } from './engine.ts';
 
 export function aiSettings(shell: Shell, signal: AbortSignal): HTMLElement {
   const modelsApi = shell.account ? new ServiceApi(shell.account.api.base, 'models') : null;
@@ -35,6 +39,8 @@ export function aiSettings(shell: Shell, signal: AbortSignal): HTMLElement {
     h('p', { class: 'hint' }, 'As the owner you can save a model\'s files on this MyiaOS, so browsers fetch it from here instead of Hugging Face.'),
     h('div', { class: 'row-buttons' }, saveBtn, stopSaveBtn, removeBtn), waitLine, saveBar, saveText);
   const findBtn = h('button', { type: 'button', class: 'btn' }, 'Find AI models...');
+  const myList = h('div', { class: 'ai-mylist', role: 'list', 'aria-label': 'Your model list' });
+  const idleBox = h('input', { type: 'checkbox' });
   const chatBtn = h('button', { type: 'button', class: 'btn primary' }, 'Open Chat › Agents');
 
   const chosen = () => models.find(m => m.id === pick.value) ?? null;
@@ -85,6 +91,34 @@ export function aiSettings(shell: Shell, signal: AbortSignal): HTMLElement {
     }));
     pick.value = models.some(m => m.id === was) ? was : (models[0]?.id ?? '');
     paint();
+    await paintMyList();
+  }
+
+  // ---- Your model list ----
+  async function changePrefs(change: (p: AiPrefs) => AiPrefs): Promise<void> {
+    try {
+      await writePrefs(shell.fs, change(await readPrefs(shell.fs)));
+    } catch (error) {
+      await shell.report('Could not keep your AI choices', error);
+    }
+    await paintMyList();
+  }
+  async function paintMyList(): Promise<void> {
+    const prefs = await readPrefs(shell.fs);
+    idleBox.checked = prefs.idleDisconnect;
+    // Favourites first, in the order starred; then the rest as listed above. Hidden ones stay here, so they can come back.
+    const ordered = [...prefs.favourites.map(id => models.find(m => m.id === id)).filter((m): m is ModelInfo => !!m), ...models.filter(m => !prefs.favourites.includes(m.id))];
+    myList.replaceChildren(...ordered.map(m => {
+      const fav = prefs.favourites.includes(m.id);
+      const hidden = prefs.hidden.includes(m.id);
+      const star = h('button', { type: 'button', class: 'btn ai-star', 'aria-pressed': String(fav), 'aria-label': `Favourite: ${modelLabel(m.id)}`, title: fav ? 'A favourite: listed first in Chat › Agents. Press to take it off.' : 'Make it a favourite: listed first in Chat › Agents, and the first is chosen when Chat opens.' }, fav ? '★' : '☆');
+      const show = h('input', { type: 'checkbox', checked: !hidden, 'aria-label': `Show ${modelLabel(m.id)} in Chat › Agents` });
+      on(star, 'click', () => void changePrefs(p => withFavourite(p, m.id, !fav)), signal);
+      on(show, 'change', () => void changePrefs(p => withHidden(p, m.id, !show.checked)), signal);
+      return h('div', { class: 'ai-mylist-row' + (hidden ? ' off' : ''), role: 'listitem' }, star,
+        h('span', { class: 'ai-mylist-name' }, modelLabel(m.id), h('span', { class: 'hint' }, ` ${formatSize(m.bytes)}${m.mine ? ', you added it' : ''}`)),
+        h('label', { class: 'ai-mylist-show' }, show, ' Show in Chat'));
+    }));
   }
 
   on(pick, 'change', paint, signal);
@@ -127,6 +161,11 @@ export function aiSettings(shell: Shell, signal: AbortSignal): HTMLElement {
     await fill();
   }, signal);
   on(findBtn, 'click', () => void shell.openApp('aimodels'), signal);
+  on(idleBox, 'change', async () => {
+    const want = idleBox.checked;
+    await changePrefs(p => ({ ...p, idleDisconnect: want }));
+    OnDevice.idleAfter(want ? IDLE_MINUTES : null);
+  }, signal);
   on(chatBtn, 'click', () => void shell.openApp('chat', 'agents'), signal);
 
   // Claude: "Use Claude" goes to where the talking is.
@@ -140,6 +179,10 @@ export function aiSettings(shell: Shell, signal: AbortSignal): HTMLElement {
     h('label', { class: 'bin-set' }, 'Model ', pick),
     modelNote, sourceLine, ownerBox, retiredBox,
     h('div', { class: 'row-buttons' }, chatBtn, findBtn),
+    h('h4', { class: 'ai-mylist-head' }, 'Your model list'),
+    h('p', { class: 'hint' }, 'Favourites (★) come first in Chat › Agents, and the first is chosen when Chat opens. Untick "Show in Chat" to leave a model out of the list; it stays here, so you can bring it back.'),
+    myList,
+    h('label', { class: 'check-row' }, idleBox, ` Disconnect when idle: after ${IDLE_MINUTES} minutes without a question, the built-in AI stops and frees its graphics memory. Your next message starts it again by itself.`),
     cloud.el,
     router.el);
 

@@ -262,11 +262,6 @@ const OUTSIDE: Array<[string, RegExp, string]> = [
   ['https://github.com/anthropics/anthropic-sdk-php', /apps[\\/]about\.ts$/, 'a link on the Credits page, opened only when clicked'],
   ['https://${raw}', /notepadpro[\\/]markdown\.ts$/, 'a "www." autolink in a Markdown preview becomes https (then checked by safeHref)'],
   ['http://,', /apps[\\/]link\.ts$/, 'words in a message ("starts with https:// or http://"), not an address'],
-  ['https://www.youtube-nocookie.com', /apps[\\/]youtube(\.ts|[\\/]links\.ts)$/, 'YouTube Player: YouTube\'s privacy-enhanced player (allowed in frame-src)'],
-  ['https://${text}', /youtube[\\/]links\.ts$/, 'YouTube Player: "youtube.com/watch?v=..." pasted without https:// (the host is checked next)'],
-  ['https://i.ytimg.com/vi/', /youtube[\\/]links\.ts$/, 'YouTube Player: pictures beside videos (allowed in img-src)'],
-  ['https://www.youtube.com/playlist?list=', /youtube[\\/]links\.ts$/, 'YouTube Player: "Open on YouTube" in a new browser tab'],
-  ['https://www.youtube.com/watch?v=', /youtube[\\/]links\.ts$/, 'YouTube Player: "Open on YouTube" in a new browser tab'],
   ['https://huggingface.co', /assistant[\\/]hfsearch\.ts$/, 'Find AI models: the search and each model\'s details (allowed in connect-src), and the "Model card" link'],
   ['https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/', /assistant[\\/]modellibs\.ts$/, 'the MLC team\'s WebGPU programs, fetched by WebLLM when an added model starts (allowed in connect-src)'],
 ];

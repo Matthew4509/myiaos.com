@@ -413,37 +413,6 @@ await step('About MyiaOS shows the version and credits every bundled package, wi
   await w.getByRole('button', { name: 'Close' }).click();
 });
 
-await step('YouTube Player: a pasted playlist link plays in the privacy-enhanced player (YouTube stubbed), and saves', async () => {
-  // No request leaves this computer: YouTube's player and pictures are answered by a stand-in.
-  await page.route(/youtube-nocookie\.com|i\.ytimg\.com/, route => route.fulfill({ status: 200, contentType: 'text/html', body: '<p>stand-in player</p>' }));
-  await openApp('youtube player');
-  const w = page.locator('.win', { has: page.locator('.yt') });
-  await w.locator('.yt-idle').waitFor();
-  eq(await w.locator('iframe').count(), 0, 'nothing loads from YouTube before a video is chosen');
-  await w.locator('.yt-input').fill('https://evil.example/watch?v=dQw4w9WgXcQ');
-  await page.keyboard.press('Enter');
-  ok((await w.locator('.statusbar').innerText()).includes('not a YouTube link'), 'other sites refused');
-  // No search: words get the way out, and nothing is asked of the server.
-  await w.locator('.yt-input').fill('garden pruning');
-  await page.keyboard.press('Enter');
-  ok((await w.locator('.statusbar').innerText()).includes('does not search'), 'words say how to find a video instead');
-  eq(await w.locator('iframe').count(), 0, 'words play nothing');
-  await w.locator('.yt-input').fill('https://www.youtube.com/playlist?list=PL1234567890ab');
-  await page.keyboard.press('Enter');
-  const frame = w.locator('iframe.yt-frame');
-  await frame.waitFor();
-  ok((await frame.getAttribute('src')).startsWith('https://www.youtube-nocookie.com/embed/videoseries?'), 'privacy-enhanced player');
-  eq(await frame.getAttribute('referrerpolicy'), 'strict-origin-when-cross-origin', 'referrer sent to YouTube only as the site');
-  ok(!(await frame.getAttribute('sandbox')).includes('allow-top-navigation'), 'the player cannot move the desktop page');
-  await w.getByRole('button', { name: '☆ Save' }).click();
-  await page.locator('.dialog input').fill('Test list');
-  await page.locator('.dialog').getByRole('button', { name: 'Save' }).click();
-  await w.locator('.yt-row', { hasText: 'Test list' }).waitFor();
-  eq(await w.getByRole('button', { name: '★ Saved' }).count(), 1, 'marked as saved');
-  await w.getByRole('button', { name: 'Close' }).click();
-  await page.unroute(/youtube-nocookie\.com|i\.ytimg\.com/);
-});
-
 // Mail, against the stand-in mail server (test/fake-mail.mjs). The PHP server is started with
 // DESKTOP_MAIL_ALLOW_HOSTS=127.0.0.1:3143,127.0.0.1:3587 and DESKTOP_MAIL_ALLOW_PLAIN=1 (tools/run-browser-tests.sh).
 const fake = await startFakeMail({ imap: 3143, smtp: 3587 });
