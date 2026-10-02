@@ -201,6 +201,14 @@ export class StartMenu {
       closeColumns(0);
       paint();
     }, signal);
+    // Enter (a phone keyboard's Go key) opens the first match.
+    on(filter, 'keydown', (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || !filter.value.trim()) return;
+      const first = list.querySelector<HTMLElement>('.start-item');
+      if (!first) return;
+      event.preventDefault();
+      first.click();
+    }, signal);
 
     // ---- Pin and unpin ----
     const setPinned = (ids: string[]) => {
@@ -304,6 +312,7 @@ export class StartMenu {
       if (t instanceof Node && !panel.contains(t) && !this.button.contains(t) && !this.flyouts.some(f => f.contains(t))) this.close(false);
     }, signal, { capture: true });
     on(panel, 'keydown', keys, signal);
-    filter.focus();
+    // On a touch screen the search box waits for a tap: focusing it would raise the on-screen keyboard over the menu.
+    if (!matchMedia('(pointer: coarse)').matches) filter.focus();
   }
 }

@@ -20,7 +20,7 @@ export interface QuickLock {
 }
 
 export function buildTaskbar(host: HTMLElement, windows: WindowManager, menus: MenuLayer, signal: AbortSignal, calendarHost: HTMLElement, quick?: QuickLock): TaskbarParts {
-  const startButton = h('button', { type: 'button', class: 'start-btn', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'start-menu' }, h('span', { class: 'start-orb', 'aria-hidden': 'true' }), h('span', { class: 'start-label' }, document.documentElement.dataset.theme === 'xfce' ? 'Menu' : 'Start'));
+  const startButton = h('button', { type: 'button', class: 'start-btn', 'aria-label': document.documentElement.dataset.theme === 'xfce' ? 'Menu' : 'Start', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': 'start-menu' }, h('span', { class: 'start-orb', 'aria-hidden': 'true' }), h('span', { class: 'start-label' }, document.documentElement.dataset.theme === 'xfce' ? 'Menu' : 'Start'));
   const tasks = h('div', { class: 'tasks', role: 'toolbar', 'aria-label': 'Open windows' });
   const showDesktop = h('button', { type: 'button', class: 'tray-btn', 'aria-label': 'Show the desktop', title: 'Show the desktop' }, h('span', { class: 'glyph-desk', 'aria-hidden': 'true' }));
   const clock = h('button', { type: 'button', class: 'clock', 'aria-haspopup': 'dialog', 'aria-expanded': 'false' });

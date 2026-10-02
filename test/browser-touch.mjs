@@ -25,8 +25,10 @@ for (const device of ['iPhone 13', 'Pixel 5']) {
     const fake = new EventTarget();
     Object.assign(fake, { height: innerHeight, width: innerWidth, offsetTop: 0, offsetLeft: 0, scale: 1 });
     Object.defineProperty(window, 'visualViewport', { value: fake, configurable: true });
-    window.__keyboard = px => {
-      fake.height = innerHeight - px;
+    // `scale` above 1 = Safari also zoomed the page in (it does for a box under 16px): the visible part shrinks by it.
+    window.__keyboard = (px, scale = 1) => {
+      fake.scale = scale;
+      fake.height = (innerHeight - px) / scale;
       fake.dispatchEvent(new Event('resize'));
     };
   });
@@ -54,11 +56,23 @@ for (const device of ['iPhone 13', 'Pixel 5']) {
   await p.locator('#desktop .item').first().waitFor({ timeout: 30000 });
   const { width, height } = p.viewportSize();
 
+  await p.locator('.start-btn').tap();
+  ok(await p.evaluate(() => !document.activeElement?.matches('input, textarea')), `${device}: opening the menu does not raise the keyboard`);
+  ok((await p.locator('.start-btn').getAttribute('aria-label')) !== null, `${device}: the menu button has a name`);
+  await p.locator('.start-btn').tap();
+  await p.evaluate(() => window.__keyboard(0, 1.5));
+  await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !document.documentElement.classList.contains('kb-open')), `${device}: a pinch zoom alone is not taken for a keyboard`);
+  await p.evaluate(() => window.__keyboard(0));
+
   for (const app of ['Panel', 'Notepad', 'Terminal', 'Chat']) {
     const at = `${device}, ${app}`;
     await p.locator('.start-btn').tap();
+    await p.locator('.start-filter').tap();
     await p.keyboard.type(app);
-    await p.locator('.start-menu .start-item', { hasText: app }).first().tap();
+    // Notepad is opened with the keyboard's Go key (Enter), the others with a tap.
+    if (app === 'Notepad') await p.keyboard.press('Enter');
+    else await p.locator('.start-menu .start-item', { hasText: app }).first().tap();
     await p.locator('.win.active').waitFor();
     await p.waitForTimeout(500);
     const close = p.locator('.win.active .win-close');
@@ -72,7 +86,17 @@ for (const device of ['iPhone 13', 'Pixel 5']) {
       Terminal: '.win.active input.term-in',
       Chat: '.win.active textarea.chat-box[aria-label="Message"]',
     }[app]);
+    const size = await field.evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+    ok(size >= 16, `${at}: the box's text is ${size}px, so Safari does not zoom in`);
+    if (app === 'Notepad') {
+      const cut = await p.locator('.win.active .toolbar > .tool').evaluateAll(bs => bs.filter(b => b.scrollWidth > b.clientWidth + 1).map(b => b.textContent));
+      ok(cut.length === 0, `${at}: no toolbar button has its words cut (${cut.join(', ')})`);
+    }
     await field.tap();
+    // Zoomed in as well (as Safari does for a small box): the keyboard must still be seen.
+    await p.evaluate(px => window.__keyboard(px, 1.14), KEYBOARD);
+    await p.waitForTimeout(300);
+    ok(await p.evaluate(() => document.documentElement.classList.contains('kb-open')), `${at}: a keyboard is seen on a zoomed page`);
     await p.evaluate(px => window.__keyboard(px), KEYBOARD);
     await p.waitForTimeout(300);
     const before = await field.inputValue();
@@ -84,6 +108,8 @@ for (const device of ['iPhone 13', 'Pixel 5']) {
       await p.locator('.win.active').getByText('Agents', { exact: true }).tap();
       const models = await p.locator('.win.active select').first().boundingBox();
       ok(models !== null && models.y >= 0 && models.y < height - KEYBOARD, `${at}: the model list is on screen with the keyboard open`);
+      const rows = await p.locator('.win.active .agent-bar').evaluateAll(bs => bs.map(b => Math.round(b.getBoundingClientRect().height)));
+      ok(rows.every(hgt => hgt <= 48), `${at}: with the keyboard open each row of controls is one line (${rows.join(', ')}px)`);
     }
     await p.evaluate(() => window.__keyboard(0));
     await p.waitForTimeout(200);

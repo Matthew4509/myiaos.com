@@ -1612,3 +1612,27 @@ textarea.field { resize: vertical; font: inherit; }
    it, and the taskbar, which would be under the keyboard, steps aside until it closes. */
 :root.kb-open #screen, :root.kb-open .backdrop { top: var(--vv-top); bottom: auto; height: var(--vv-h); }
 :root.kb-open #taskbar { display: none; }
+
+/* Text boxes on touch screens: Safari on iPhone zooms the page in when a box under 16px is tapped, and a zoomed page
+   also stops the keyboard fit above (keyboard.ts reads a zoom as a pinch). 16px boxes are never zoomed. Checkboxes,
+   radios and sliders have no text and keep their size. */
+@media (pointer: coarse) {
+  :root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  :root textarea, :root select, :root [contenteditable="true"] { font-size: 16px !important; }
+}
+/* Narrow screens: a toolbar keeps every button whole and scrolls sideways, instead of squeezing them until the words
+   are cut ("Sav", "Repla"). */
+@media (max-width: 720px) {
+  .toolbar { overflow-x: auto; scrollbar-width: thin; }
+  .toolbar > .tool, .toolbar > .btn { flex: none; white-space: nowrap; }
+}
+/* A short screen (a phone with its keyboard up): Chat > Agents keeps its three rows of controls to one line each,
+   scrolling sideways, so the conversation keeps the room. */
+@media (max-height: 520px) {
+  .agent-bar { flex-wrap: nowrap; overflow-x: auto; padding: 4px 8px; gap: 4px; scrollbar-width: thin; }
+  .agent-bar > * { flex: none; }
+  .agent-bar .agent-pick { flex: 0 0 auto; width: 200px; }
+}
+:root.kb-open .agent-bar { flex-wrap: nowrap; overflow-x: auto; padding: 4px 8px; gap: 4px; }
+:root.kb-open .agent-bar > * { flex: none; }
+:root.kb-open .agent-bar .agent-pick { flex: 0 0 auto; width: 200px; }

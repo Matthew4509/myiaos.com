@@ -93,6 +93,13 @@ page = await ownerContext.newPage();
 const problems = [];
 page.on('pageerror', e => problems.push('pageerror: ' + e.message));
 const settle = ms => page.waitForTimeout(ms);
+// These steps were written for the plain sign-in page; since the Reader became the default front, the owner turns
+// the sign-in page on first (Settings offers the same choice). browser-touch.mjs covers the Reader front.
+const signInFront = p => p.evaluate(() => fetch('api/auth.php?op=site-front', {
+  method: 'POST', credentials: 'same-origin',
+  headers: { 'X-Desktop-Store': '1', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ front: 'signin' }),
+}).then(r => r.status));
 const desktopOf = p => p.locator('#desktop .item').first().waitFor({ timeout: 30000 });
 const openApp = async (p, label) => {
   await p.locator('.start-btn').click();
@@ -136,6 +143,7 @@ await step('the owner sets up with "Encrypt my files" and saves a personal text 
   await page.locator('.gate .check-row input').check();
   await page.getByRole('button', { name: 'Continue' }).click();
   await desktopOf(page);
+  eq(await signInFront(page), 200, 'the owner turns the sign-in page on');
   await saveNote(page, SECRET, FILE);
   await settle(1500);
 });

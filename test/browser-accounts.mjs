@@ -82,6 +82,14 @@ let secret = '';
 console.log('Accounts, lock, Studio and emulator, against ' + BASE);
 await page.goto(BASE);
 
+// These steps were written for the plain sign-in page; since the Reader became the default front, the owner turns
+// the sign-in page on first (Settings offers the same choice). browser-touch.mjs covers the Reader front.
+const signInFront = p => p.evaluate(() => fetch('api/auth.php?op=site-front', {
+  method: 'POST', credentials: 'same-origin',
+  headers: { 'X-Desktop-Store': '1', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ front: 'signin' }),
+}).then(r => r.status));
+
 await step('first visit: the owner set-up screen, and weak passwords are refused with a way out', async () => {
   await page.locator('.gate h1', { hasText: 'Set up this desktop' }).waitFor({ timeout: 20000 });
   eq(await page.title(), 'MyiaOS - Set up this desktop', 'tab title');
@@ -101,6 +109,7 @@ await step('first visit: the owner set-up screen, and weak passwords are refused
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.locator('#desktop .item').first().waitFor({ timeout: 20000 });
   eq(await storeStatus(), 200, 'the store answers the signed-in owner');
+  eq(await signInFront(page), 200, 'the owner turns the sign-in page on');
 });
 
 await step('Start menu shows the person, Lock and Sign out', async () => {
@@ -137,6 +146,9 @@ await step('a PIN is set (password and two-step code asked first)', async () => 
   await w.locator('.acct-form input[maxlength="4"]').fill('4821');
   await w.getByRole('button', { name: 'Save PIN' }).click();
   await w.getByText('Set. The locked screen opens with your 4-digit PIN.').waitFor();
+  // The lock steps below are about the spreadsheet disguise (the Reader is the default screensaver).
+  await w.locator('.acct-tab', { hasText: 'Screensaver and lock' }).click();
+  await w.locator('select:has(option[value="sheet"])').selectOption('sheet');
 });
 
 await step('Lock now hides the desktop, changes the tab title, and the server refuses files until the PIN', async () => {

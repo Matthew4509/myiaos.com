@@ -289,8 +289,11 @@ class DesktopShell implements Shell {
   applyTheme(): void {
     document.documentElement.dataset.theme = this.session.data.theme;
     // Xfce calls its button Menu; the other schemes call it Start (Glass and Flat show only the orb).
+    const word = this.session.data.theme === 'xfce' ? 'Menu' : 'Start';
     const label = document.querySelector('.start-label');
-    if (label) label.textContent = this.session.data.theme === 'xfce' ? 'Menu' : 'Start';
+    if (label) label.textContent = word;
+    // The word is hidden on phones and in Glass and Flat, so the button carries its name itself.
+    document.querySelector('.start-btn')?.setAttribute('aria-label', word);
   }
 
   async report(title: string, error: unknown): Promise<void> {

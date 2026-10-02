@@ -69,6 +69,13 @@ const openApp = async label => {
   await page.locator('.start-filter').fill(label);
   await page.locator(`.start-menu [data-label="${label}"]`).first().click();
 };
+// These steps were written for the plain sign-in page; since the Reader became the default front, the owner turns
+// the sign-in page on first (Settings offers the same choice). browser-touch.mjs covers the Reader front.
+const signInFront = p => p.evaluate(() => fetch('api/auth.php?op=site-front', {
+  method: 'POST', credentials: 'same-origin',
+  headers: { 'X-Desktop-Store': '1', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ front: 'signin' }),
+}).then(r => r.status));
 const desktop = () => page.locator('#desktop .item').first().waitFor({ timeout: 30000 });
 const signIn = async password => {
   await page.locator('.gate h1', { hasText: 'Sign in' }).waitFor({ timeout: 20000 });
@@ -115,6 +122,7 @@ await step('set-up with "Encrypt my files": the recovery key is shown once, befo
   await page.locator('.gate .check-row input').check();
   await page.getByRole('button', { name: 'Continue' }).click();
   await desktop();
+  eq(await signInFront(page), 200, 'the owner turns the sign-in page on');
 });
 
 await step('a saved file is stored sealed: its words and its name are nowhere on the server\'s disk', async () => {

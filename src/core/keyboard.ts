@@ -11,8 +11,9 @@ export function fitAboveKeyboard(): void {
   let frame = 0;
   const apply = () => {
     frame = 0;
-    // A pinch zoom also shrinks the visual viewport (a keyboard leaves the scale at 1); a keyboard takes well over 100px.
-    const covered = vv.scale <= 1.01 && window.innerHeight - vv.height > 100;
+    // A zoom shrinks the visual viewport by exactly its scale, so height times scale is still the whole screen; a
+    // keyboard takes well over 100px of it, zoomed or not.
+    const covered = window.innerHeight - vv.height * vv.scale > 100;
     document.documentElement.classList.toggle('kb-open', covered);
     if (covered) {
       rootStyle.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
